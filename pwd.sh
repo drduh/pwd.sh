@@ -4,8 +4,6 @@
 #
 # An interface to gpg for managing passwords.
 
-#set -o errexit
-#set -o xtrace
 set -o pipefail
 set -o nounset
 
@@ -75,10 +73,11 @@ read_pass () {
 }
 
 
-write_pass () {
-  # Writes a password.
+create_id () {
+  # Creates a new Username/ID.
 
   read -p "Username/ID: " id
+
   read -p "Create random password? (y/n default: y) " rand_pass
   if [ "${rand_pass}" == "n" ]; then
     echo "Choose a password for '${id}'."
@@ -87,19 +86,40 @@ write_pass () {
   else
     user_pass=$(gen_pass)
   fi
+}
+
+
+write_pass () {
+  # Writes a password to safe.
 
   echo "Enter password to unlock ${safe}."
   get_pass ; echo
 
+  # Create a temporary file to decrypt passwords to.
+  # TODO(any): can this be done without writing to disk?
   tmp_secret=$(mktemp -q /tmp/pwd.sh.XXXXXX)
+
+  # Decrypt safe, exclude specified ID in case of update/removal.
   if [ -s ${safe} ] ; then
     decrypt ${password} ${safe} | grep -v " ${id}" > ${tmp_secret}
   fi
-  echo "${user_pass} ${id}" >> ${tmp_secret}
+
+  # Append new password for ID, if one was provided.
+  if [ ! -z ${user_pass+x} ] ; then
+    echo "${user_pass} ${id}" >> ${tmp_secret}
+  fi
+
+  # Encrypt plaintext to safe.
   encrypt ${password} ${safe} ${tmp_secret}
+
+  # Remove temporary plaintext.
   ${del} ${del_opts} ${tmp_secret}
 
-  echo "Wrote password for '${id}' to ${safe}."
+  echo "Updated password for '${id}' in ${safe}."
+
+  unset id
+  unset password
+  unset user_pass
 }
 
 
@@ -124,7 +144,6 @@ create_keys () {
 
     echo "Choose a strong master password."
     get_pass ; echo
-    key_pass=$password
 
     ${gpg} ${gpg_opts} \
       --gen-key --batch <(
@@ -133,12 +152,14 @@ Key-Type: RSA
 Key-Length: 4096
 Expire-Date: 0
 Name-Real: ${name}
-Passphrase: ${key_pass}
+Passphrase: ${password}
 %commit
 EOF
 ) 2>/dev/null
 
   echo "Created keys: ${public} and ${secret}."
+
+  unset password
 }
 
 
@@ -184,9 +205,13 @@ main () {
 
   sanity_check
 
-  read -p "Read or write a password? (r/w default: r) " action
+  read -p "Read, write, or delete a password? (r/w/d default: r) " action
   if [ "${action}" == "w" ] ; then
+    create_id
     write_pass
+  elif [ "${action}" == "d" ] ; then
+    read -p "Which Username/ID to delete? " id
+    write_pass 
   else
     read_pass
   fi

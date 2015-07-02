@@ -18,5 +18,7 @@ Type `w` to create a password. Will update existing password with same Username/
 
 Type `r` to print stored passwords. Can be piped to `grep` and `pbcopy` or `xsel`, for example.
 
+Type `d` to delete a password by Username/ID.
+
 To reset/erase keys and passwords, `rm pwd.sh.*`.
 
