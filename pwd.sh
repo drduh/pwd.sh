@@ -7,6 +7,8 @@
 set -o pipefail
 set -o nounset
 
+umask 077
+
 safe=pwd.sh.safe
 public=pwd.sh.pub
 secret=pwd.sh.sec
