@@ -68,7 +68,7 @@ read_pass () {
     echo "Empty safe, no passwords!"
     exit 3
   else
-    echo "Enter password for ${safe}."
+    echo "Enter password to unlock ${safe}."
     get_pass ; echo
     decrypt ${password} ${safe}
   fi
@@ -88,7 +88,7 @@ write_pass () {
     user_pass=$(gen_pass)
   fi
 
-  echo "Enter password for ${safe}."
+  echo "Enter password to unlock ${safe}."
   get_pass ; echo
 
   tmp_secret=$(mktemp -q /tmp/pwd.sh.XXXXXX)
@@ -110,9 +110,9 @@ gen_pass () {
   if [ "$pass_length" == "min" ]; then
     len=6
   elif [ "$pass_length" == "avg" ]; then
-    len=12
+    len=18
   else
-    len=24
+    len=36
   fi
 
   ${gpg} --gen-random -a 0 ${len}
