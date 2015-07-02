@@ -8,6 +8,8 @@ This script uses GPG to manage an encrypted text file containing passwords.
 # Requirements
 Requires `gpg`. Install with `brew install gpg` or `apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
 
+Requires `srm`. Install with `apt-get install secure-delete`. Already included  in OS X.
+
 # Installation
 
     git clone https://github.com/drduh/pwd.sh && cd pwd.sh

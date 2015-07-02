@@ -11,10 +11,10 @@ safe=pwd.sh.safe
 public=pwd.sh.pub
 secret=pwd.sh.sec
 
-del=/usr/bin/srm
+del=$(which srm)
 del_opts=("--force --zero")
 
-gpg=/usr/local/bin/gpg
+gpg=$(which gpg)
 gpg_opts=("--no-default-keyring --keyring ./${public} --secret-keyring ./${secret}")
 
 name="nobody@pwd.sh"
@@ -174,13 +174,13 @@ create_safe () {
 sanity_check () {
   # Make sure all necessary programs are installed and files exist.
 
-  if [ ! -x ${gpg} ] ; then
+  if [[ -z ${gpg} && ! -x ${gpg} ]] ; then
     echo "GnuPG is not available!"
     exit 127
   fi
 
-  if [ ! -x ${del} ] ; then
-    echo "srm/rm is not available!"
+  if [[ -z ${del} && ! -x ${del} ]] ; then
+    echo "srm is not available!"
     exit 127
   fi
 
@@ -200,25 +200,16 @@ sanity_check () {
 }
 
 
-main () {
-  # Main function.
+sanity_check
 
-  sanity_check
-
-  read -p "Read, write, or delete a password? (r/w/d default: r) " action
-  if [ "${action}" == "w" ] ; then
-    create_id
-    write_pass
-  elif [ "${action}" == "d" ] ; then
-    read -p "Which Username/ID to delete? " id
-    write_pass 
-  else
-    read_pass
-  fi
-}
-
-
-main
-
-exit 0
+read -p "Read, write, or delete a password? (r/w/d default: r) " action
+if [ "${action}" == "w" ] ; then
+  create_id
+  write_pass
+elif [ "${action}" == "d" ] ; then
+  read -p "Which Username/ID to delete? " id
+  write_pass 
+else
+  read_pass
+fi
 
