@@ -3,6 +3,8 @@ GnuPG wrapper for password management.
 
 This script uses GPG to manage an encrypted text file containing passwords.
 
+![Screencapture GIF](https://i.imgur.com/FrRHeje.gif)
+
 # Requirements
 Requires `gpg`. Install with `brew install gpg` or `apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
 
