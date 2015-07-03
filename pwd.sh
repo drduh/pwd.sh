@@ -5,7 +5,6 @@
 set -o errtrace
 set -o nounset
 set -o pipefail
-set -x
 
 gpg=$(which gpg)
 safe=${PWDSH_SAFE:=pwd.sh.safe}
