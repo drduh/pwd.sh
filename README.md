@@ -3,10 +3,12 @@ GnuPG wrapper for password management.
 
 This script uses GPG to manage an encrypted text file containing passwords.
 
-![Screencapture GIF](https://i.imgur.com/zLScRUL.gif)
+![Screencapture GIF](https://i.imgur.com/088iLqu.gif)
 
 # Requirements
-Requires `gpg`. Install with `brew install gpg` or `apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
+Requires `gpg`.
+
+Install with `brew install gpg` or `sudo apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
 
 # Installation
 
@@ -16,11 +18,11 @@ Requires `gpg`. Install with `brew install gpg` or `apt-get install gnupg` or bu
 
 Run the script with `./pwd.sh`
     
-Type `w` to create a password. Will update existing password with same Username/ID.
+Type `w` to write a password.
 
-Type `r` to print stored passwords. Can be piped to `grep` and `pbcopy` or `xsel`, for example.
+Type `r` to read passwords. Pipe to `grep` and `pbcopy` or `xsel`, for example.
 
-Type `d` to delete a password by Username/ID.
+Type `d` to delete a password.
 
 The encrypted file `pwd.sh.safe` can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
