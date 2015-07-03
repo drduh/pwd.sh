@@ -8,8 +8,6 @@ This script uses GPG to manage an encrypted text file containing passwords.
 # Requirements
 Requires `gpg`. Install with `brew install gpg` or `apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
 
-Requires `srm`. Install with `apt-get install secure-delete`. Already included  in OS X.
-
 # Installation
 
     git clone https://github.com/drduh/pwd.sh && cd pwd.sh
@@ -24,5 +22,6 @@ Type `r` to print stored passwords. Can be piped to `grep` and `pbcopy` or `xsel
 
 Type `d` to delete a password by Username/ID.
 
-To reset/erase keys and passwords, `rm pwd.sh.*`.
+The encrypted file `pwd.sh.safe` can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
+A sample `gpg.conf` configuration file is provided for your consideration.
