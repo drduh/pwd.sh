@@ -57,11 +57,11 @@ decrypt () {
 encrypt () {
   # Encrypt with a password.
 
-  # TODO(drduh): don't retrieve passphrase as arg
+
   ${gpg} \
     --symmetric --armor --batch --yes \
-    --command-fd 0 --passphrase "${1}" \
-    --output "${2}" "${3}" 2>/dev/null
+    --passphrase-fd 3 \
+    --output "${2}" "${3}" 3< <(echo "${1}")
 }
 
 
