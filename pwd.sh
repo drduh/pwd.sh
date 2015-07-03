@@ -7,7 +7,7 @@ set -o nounset
 set -o pipefail
 
 gpg=$(which gpg)
-safe=pwd.sh.safe
+safe=${PWDSH_SAFE:=pwd.sh.safe}
 
 
 fail () {
