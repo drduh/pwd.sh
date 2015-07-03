@@ -2,7 +2,7 @@
 
 Script to manage passwords in an encrypted file using gpg.
 
-![screencast gif](https://i.imgur.com/nkJ7Zlt.gif)
+![screencast gif](https://i.imgur.com/sQoF3VN.gif)
 
 # Installation
 
