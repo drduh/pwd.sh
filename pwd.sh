@@ -59,15 +59,15 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
-  if [[ -z ${username} || ${username} == "all" ]] ; then
-    username=""
+  if [[ -z ${website} || ${website} == "all" ]] ; then
+    website=""
   fi
 
   if [ ! -s ${safe} ] ; then
     fail "No passwords found"
   else
     get_pass "Enter password to unlock ${safe}: " ; echo
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+    decrypt ${password} ${safe} | grep " ${website}" || fail "Decryption failed"
   fi
 }
 
@@ -94,19 +94,19 @@ write_pass () {
   if [ -z ${userpass+x} ] ; then
     new_entry=" "
   else
-    new_entry="${userpass} ${username}"
+    new_entry="${userpass} ${website} ${username}"
   fi
 
   get_pass "Enter password to unlock ${safe}: " ; echo
 
-  # If safe exists, decrypt it and filter out username, or bail on error.
+  # If safe exists, decrypt it and filter out website, or bail on error.
   # If successful, append new entry, or blank line.
   # Filter out any blank lines.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
   ( if [ -f ${safe} ] ; then
       decrypt ${password} ${safe} | \
-      grep -v -e " ${username}$" || return
+      grep -v -e " ${website}$" || return
     fi ; \
     echo "${new_entry}") | \
     grep -v -e "^[[:space:]]*$" | \
@@ -115,13 +115,14 @@ write_pass () {
 }
 
 
-create_username () {
-  # Create a new username and password.
+create_website () {
+  # Create a new website and password.
 
+  read -p "Website: " website
   read -p "Username: " username
   read -p "Generate password? (y/n, default: y) " rand_pass
   if [ "${rand_pass}" == "n" ]; then
-    get_pass "Enter password for \"${username}\": " ; echo
+    get_pass "Enter password for \"${website}\": " ; echo
     userpass=$password
   else
     userpass=$(gen_pass)
@@ -144,12 +145,12 @@ sanity_check
 read -p "Read, write, or delete a password? (r/w/d, default: r) " action
 
 if [ "${action}" == "w" ] ; then
-  create_username && write_pass
+  create_website && write_pass
 elif [ "${action}" == "d" ] ; then
-  read -p "Username to delete? " username
+  read -p "Website to delete? " website
   write_pass
 else
-  read -p "Username to read? (default: all) " username
+  read -p "Website to read? (default: all) " website
   read_pass
 fi
 
