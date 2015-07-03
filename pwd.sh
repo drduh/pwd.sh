@@ -26,21 +26,20 @@ get_pass () {
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then
       break
-    fi
-    if [[ ${char} == $'\177' ]]; then
-      if [[ -z "${password}" ]]; then
-        prompt=''
+    elif [[ ${char} == $'\177' ]] ; then
+      if [[ -z "${password}" ]] ; then
+        prompt=""
       else
         prompt=$'\b \b'
         password="${password%?}"
       fi
     else
-      prompt='*'
+      prompt="*"
       password+="${char}"
     fi
   done
 
-  if [ -z ${password+x} ] ; then
+  if [[ -z ${password} ]] ; then
     fail "No password provided"
   fi
 }
