@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Script for managing passwords in a symmetrically encrypted file using GnuPG.
 
