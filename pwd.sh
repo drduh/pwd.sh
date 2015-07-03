@@ -72,10 +72,12 @@ read_pass () {
     username=""
   fi
 
-  if [ ! -s ${safe} ] ; then
+  if [[ ! -s ${safe} ]] ; then
     fail "No passwords found"
   else
-    get_pass "Enter password to unlock ${safe}: " ; echo
+    get_pass "
+  Enter password to unlock ${safe}: "
+    printf "\n\n"
     decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
   fi
 }
@@ -84,9 +86,10 @@ read_pass () {
 gen_pass () {
   # Generate a password.
 
-  len=40
+  len=50
   max=100
-  read -p "Password length? (default: ${len}, max: ${max}) " length
+  read -p "
+  Password length? (default: ${len}, max: ${max}) " length
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then
     len=${length}
@@ -107,7 +110,8 @@ write_pass () {
     new_entry="${userpass} ${username}"
   fi
 
-  get_pass "Enter password to unlock ${safe}: " ; echo
+  get_pass "
+  Enter password to unlock ${safe}: " ; echo
 
   # If safe exists, decrypt it and filter out username, or bail on error.
   # If successful, append new entry, or blank line.
@@ -128,14 +132,19 @@ write_pass () {
 create_username () {
   # Create a new username and password.
 
-  read -p "Username: " username
-  read -p "Generate password? (y/n, default: y) " rand_pass
+  read -p "
+  Username: " username
+  read -p "
+  Generate password? (y/n, default: y) " rand_pass
+
   if [ "${rand_pass}" == "n" ]; then
-    get_pass "Enter password for \"${username}\": " ; echo
+    get_pass "
+  Enter password for \"${username}\": " ; echo
     userpass=$password
   else
     userpass=$(gen_pass)
-    echo "Password: ${userpass}"
+    echo "
+  Password: ${userpass}"
   fi
 }
 
@@ -151,17 +160,19 @@ sanity_check () {
 
 sanity_check
 
-read -p "Read, write, or delete a password? (r/w/d, default: r) " action
+read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
+printf "\n"
 
 if [ "${action}" == "w" ] ; then
   create_username && write_pass
 elif [ "${action}" == "d" ] ; then
-  read -p "Username to delete? " username
-  write_pass
+  read -p "
+  Username to delete? " username && write_pass
 else
-  read -p "Username to read? (default: all) " username
-  read_pass
+  read -p "
+  Username to read? (default: all) " username && read_pass
 fi
 
-tput setaf 2 ; echo "Done" ; tput sgr0
+tput setaf 2 ; echo "
+Done" ; tput sgr0
 
