@@ -85,14 +85,15 @@ gen_pass () {
   # Generate a password.
 
   len=40
-  read -p "Password length? (default: 40, max: 100) " length
+  max=100
+  read -p "Password length? (default: ${len}, max: ${max}) " length
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then
     len=${length}
   fi
 
   # base64: 4 characters for every 3 bytes
-  ${gpg} --gen-random -a 0 75 | cut -c -${len}
+  ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
 }
 
 
