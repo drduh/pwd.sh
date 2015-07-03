@@ -5,6 +5,7 @@
 set -o errtrace
 set -o nounset
 set -o pipefail
+set -x
 
 gpg=$(which gpg)
 safe=${PWDSH_SAFE:=pwd.sh.safe}
@@ -57,9 +58,10 @@ decrypt () {
 encrypt () {
   # Encrypt with a password.
 
-  echo "${1}" | ${gpg} \
+  # TODO(drduh): don't retrieve passphrase as arg
+  ${gpg} \
     --symmetric --armor --batch --yes \
-    --passphrase-fd 0 \
+    --command-fd 0 --passphrase "${1}" \
     --output "${2}" "${3}" 2>/dev/null
 }
 
