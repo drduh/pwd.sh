@@ -48,18 +48,18 @@ get_pass () {
 decrypt () {
   # Decrypt with a password.
 
-  ${gpg} \
+  echo "${1}" | ${gpg} \
     --decrypt --armor --batch \
-    --command-fd 0 --passphrase "${1}" "${2}" 2>/dev/null
+    --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
 
 encrypt () {
   # Encrypt with a password.
 
-  ${gpg} \
+  echo "${1}" | ${gpg} \
     --symmetric --armor --batch --yes \
-    --command-fd 0 --passphrase "${1}" \
+    --passphrase-fd 0 \
     --output "${2}" "${3}" 2>/dev/null
 }
 
