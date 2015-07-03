@@ -20,7 +20,7 @@ Run the script with `./pwd.sh`
     
 Type `w` to write a password.
 
-Type `r` to read passwords. Pipe to `grep` and `pbcopy` or `xsel`, for example.
+Type `r` to read a password or all passwords.
 
 Type `d` to delete a password.
 

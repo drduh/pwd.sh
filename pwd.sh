@@ -59,11 +59,15 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
+  if [[ -z ${username} || ${username} == "all" ]] ; then
+    username=""
+  fi
+
   if [ ! -s ${safe} ] ; then
     fail "No passwords found"
   else
     get_pass "Enter password to unlock ${safe}: " ; echo
-    decrypt ${password} ${safe} || fail "Decryption failed"
+    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
   fi
 }
 
@@ -120,6 +124,7 @@ create_username () {
     userpass=$password
   else
     userpass=$(gen_pass)
+    echo "Password: ${userpass}"
   fi
 }
 
@@ -143,6 +148,7 @@ elif [ "${action}" == "d" ] ; then
   read -p "Username to delete? " username
   write_pass
 else
+  read -p "Username to read? (default: all) " username
   read_pass
 fi
 
