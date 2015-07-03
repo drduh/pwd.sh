@@ -21,14 +21,23 @@ fail () {
 get_pass () {
   # Prompt for a password.
 
-  unset password
+  password=''
   prompt="${1}"
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
-      if [[ ${char} == $'\0' ]] ; then
-        break
+    if [[ ${char} == $'\0' ]] ; then
+      break
+    fi
+    if [[ ${char} == $'\177' ]]; then
+      if [[ -z "${password}" ]]; then
+        prompt=''
+      else
+        prompt=$'\b \b'
+        password="${password%?}"
       fi
+    else
       prompt='*'
       password+="${char}"
+    fi
   done
 
   if [ -z ${password+x} ] ; then
