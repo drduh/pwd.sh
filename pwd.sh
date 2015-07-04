@@ -9,6 +9,8 @@ set -o pipefail
 gpg=$(which gpg)
 safe=${PWDSH_SAFE:=pwd.sh.safe}
 
+# Control copy-to-clipboard for read & generated passwords
+to_clipboard="no"
 
 fail () {
   # Print an error message and exit.
@@ -72,13 +74,23 @@ read_pass () {
     username=""
   fi
 
+  if [[ ${username} == "" && ${to_clipboard} == "yes" ]]; then
+    fail "Clipboard mode requires a specified user"
+  fi
+
   if [[ ! -s ${safe} ]] ; then
     fail "No passwords found"
   else
     get_pass "
   Enter password to unlock ${safe}: "
     printf "\n\n"
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+    output=$(decrypt ${password} ${safe} | grep " ${username}") || fail "Decryption failed"
+    if [ ${to_clipboard} == "yes" ]; then
+      echo -n $(echo ${output} | cut -d " " -f 1) | pbcopy
+      echo "Copied password for ${username} to clipboard"
+    else
+      echo ${output}
+    fi
   fi
 }
 
@@ -143,8 +155,14 @@ create_username () {
     userpass=$password
   else
     userpass=$(gen_pass)
-    echo "
+    if [[ ${to_clipboard} == "yes" ]]; then
+      echo -n ${userpass} | pbcopy
+      echo "
+  Copied generated password to the clipboard"
+    else
+      echo "
   Password: ${userpass}"
+    fi
   fi
 }
 
@@ -159,6 +177,26 @@ sanity_check () {
 
 
 sanity_check
+
+while getopts ":ch" opt; do
+  case $opt in
+    c)
+      if [ $(uname) == 'Darwin' ]; then
+        to_clipboard="yes"
+      else
+         echo "Clipboard mode is only supported on OS X"
+         exit 1
+      fi
+    ;;
+    *)
+      echo "Usage: pwd.sh [-h] [-c]"
+      echo "Options:"
+      echo "  -c      Copy passwords to the clipboard (OS X only)"
+      echo "  -h      Print this message"
+      exit 1
+    ;;
+  esac
+done
 
 read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
 printf "\n"
