@@ -7,6 +7,10 @@ set -o nounset
 set -o pipefail
 
 gpg=$(which gpg)
+if [ $? -eq 1 ]; then
+  # gpg not found, try to search gpg2
+  gpg=$(which gpg2)
+fi
 safe=${PWDSH_SAFE:=pwd.sh.safe}
 
 
