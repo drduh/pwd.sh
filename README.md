@@ -25,3 +25,8 @@ Type `d` to delete a password.
 The encrypted file `pwd.sh.safe` and script can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
 A sample `gpg.conf` configuration file is provided for your consideration.
+
+## Clipboard mode
+
+On OS X, _pwd.sh_ can send generated or loaded passwords directly to the
+clipboard by passing the `-c` option.
