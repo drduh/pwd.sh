@@ -165,7 +165,7 @@ printf "\n"
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
   create_username && write_pass
-elif [[] "${action}" =~ ^([dD])$ ]] ; then
+elif [[ "${action}" =~ ^([dD])$ ]] ; then
   read -p "
   Username to delete? " username && write_pass
 else
