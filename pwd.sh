@@ -137,7 +137,7 @@ create_username () {
   read -p "
   Generate password? (y/n, default: y) " rand_pass
 
-  if [ "${rand_pass}" == "n" ]; then
+  if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
   Enter password for \"${username}\": " ; echo
     userpass=$password
@@ -163,9 +163,9 @@ sanity_check
 read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
 printf "\n"
 
-if [ "${action}" == "w" ] ; then
+if [[ "${action}" =~ ^([wW])$ ]] ; then
   create_username && write_pass
-elif [ "${action}" == "d" ] ; then
+elif [[ "${action}" =~ ^([dD])$ ]] ; then
   read -p "
   Username to delete? " username && write_pass
 else
