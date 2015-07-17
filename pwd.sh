@@ -57,7 +57,6 @@ decrypt () {
 encrypt () {
   # Encrypt with a password.
 
-
   ${gpg} \
     --symmetric --armor --batch --yes \
     --passphrase-fd 3 \
@@ -68,17 +67,21 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
-  if [[ -z ${username} || ${username} == "all" ]] ; then
-    username=""
-  fi
-
   if [[ ! -s ${safe} ]] ; then
     fail "No passwords found"
+  fi
+
+  get_pass "
+  Enter password to unlock ${safe}: " ; printf "\n\n"
+
+  if [[ -z ${username} || ${username} == "all" ]] ; then
+    decrypt ${password} ${safe} || fail "Decryption failed"
   else
-    get_pass "
-  Enter password to unlock ${safe}: "
-    printf "\n\n"
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+    decrypt ${password} ${safe} | grep " ${username}" \
+                                | awk '{print $1}' \
+                                | pbcopy \
+                                | echo "  Password copied to clipboard" \
+                                || fail "Decryption failed"
   fi
 }
 
