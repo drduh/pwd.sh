@@ -78,7 +78,14 @@ read_pass () {
     get_pass "
   Enter password to unlock ${safe}: "
     printf "\n\n"
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+    pwds=$(decrypt ${password} ${safe} | grep " ${username}" | sort) || fail "Decryption failed"
+    while read -r pwd; do
+      local user
+      local pass
+      user=$(echo $pwd | awk '{print $1}')
+      pass=$(echo $pwd | awk '{print $2}')
+      printf "%25s => %s\n" $user $pass
+    done <<< "$pwds"
   fi
 }
 
@@ -107,11 +114,13 @@ write_pass () {
   if [ -z ${userpass+x} ] ; then
     new_entry=" "
   else
-    new_entry="${userpass} ${username}"
+    new_entry="${username} ${userpass}"
   fi
 
-  get_pass "
-  Enter password to unlock ${safe}: " ; echo
+  if [ -z ${password+x} ] ; then
+      get_pass "
+      Enter password to unlock ${safe}: " ; echo
+  fi
 
   # If safe exists, decrypt it and filter out username, or bail on error.
   # If successful, append new entry, or blank line.
@@ -157,6 +166,21 @@ sanity_check () {
   fi
 }
 
+input_file() {
+  read -p "
+  Input File: " in_file
+
+  if [ ! -r $in_file ] ; then
+    fail "File ${in_file} is not readable"
+  fi
+
+  for line in `cat $in_file` ; do
+    username=$(echo $line | cut -f1 -d,)
+    userpass=$(echo $line | cut -f2 -d,)
+    write_pass
+  done
+
+}
 
 sanity_check
 
@@ -173,6 +197,8 @@ if [[ "${action}" =~ ^([wW])$ ]] ; then
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
   read -p "
   Username to delete? " username && write_pass
+elif [[ "${action}" =~ ^([fF])$ ]]; then
+  input_file
 else
   read -p "
   Username to read? (default: all) " username && read_pass
