@@ -68,8 +68,8 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
-  if [[ -z ${username} || ${username} == "all" ]] ; then
-    username=""
+  if [[ -z ${service} || ${service} == "all" ]] ; then
+    service=""
   fi
 
   if [[ ! -s ${safe} ]] ; then
@@ -78,7 +78,7 @@ read_pass () {
     get_pass "
   Enter password to unlock ${safe}: "
     printf "\n\n"
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+    decrypt ${password} ${safe} | grep -e " ${service}" || fail "Decryption failed"
   fi
 }
 
@@ -107,7 +107,7 @@ write_pass () {
   if [ -z ${userpass+x} ] ; then
     new_entry=" "
   else
-    new_entry="${userpass} ${username}"
+    new_entry="${userpass} ${username} ${service}"
   fi
 
   get_pass "
@@ -120,7 +120,7 @@ write_pass () {
   # If successful, update to new safe file.
   ( if [ -f ${safe} ] ; then
       decrypt ${password} ${safe} | \
-      grep -v -e " ${username}$" || return
+      grep -v -e " ${service}$" || return
     fi ; \
     echo "${new_entry}") | \
     grep -v -e "^[[:space:]]*$" | \
@@ -133,13 +133,15 @@ create_username () {
   # Create a new username and password.
 
   read -p "
+  Service: " service
+  read -p "
   Username: " username
   read -p "
   Generate password? (y/n, default: y) " rand_pass
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
-  Enter password for \"${username}\": " ; echo
+  Enter password for \"${service}\": " ; echo
     userpass=$password
   else
     userpass=$(gen_pass)
@@ -167,10 +169,10 @@ if [[ "${action}" =~ ^([wW])$ ]] ; then
   create_username && write_pass
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
   read -p "
-  Username to delete? " username && write_pass
+  Service to delete? " service && write_pass
 else
   read -p "
-  Username to read? (default: all) " username && read_pass
+  Service to read? (default: all) " service && read_pass
 fi
 
 tput setaf 2 ; echo "
