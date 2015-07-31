@@ -129,7 +129,7 @@ write_pass () {
     new_entry="${username} ${userpass}"
   fi
 
-  if [ -z ${password+x} ] ; then
+  if [[ -z ${password+x} ]] ; then
       get_pass "
       Enter password to unlock ${safe}: " ; echo
   fi
