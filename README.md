@@ -28,6 +28,10 @@ Options can also be passed on the command line, e.g.,
 
 `./pwd.sh d dropbox` to delete the password called 'dropbox'.
 
+Combine with other programs by piping output, e.g.,
+
+`./pwd.sh r github | grep github | cut -f1 -d ' ' | pbcopy` to copy a password to clipboard on OS X.
+
 The script and `pwd.sh.safe` encrypted file can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
 A sample `gpg.conf` configuration file is provided for your consideration.

@@ -23,6 +23,7 @@ get_pass () {
 
   password=''
   prompt="${1}"
+
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then
       break
@@ -56,7 +57,6 @@ decrypt () {
 
 encrypt () {
   # Encrypt with a password.
-
 
   ${gpg} \
     --symmetric --armor --batch --yes \
@@ -145,17 +145,17 @@ create_username () {
   # Create a new username and password.
 
   if [[ -z "${2+x}" ]] ; then
-      read -p "
+    read -p "
   Username: " username
   else
-      username="${2}"
+    username="${2}"
   fi
 
   if [[ -z "${3+x}" ]] ; then
-      read -p "
+    read -p "
   Generate password? (y/n, default: y) " rand_pass
   else
-      rand_pass=""
+    rand_pass=""
   fi
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
@@ -182,11 +182,11 @@ sanity_check () {
 sanity_check
 
 if [[ -z "${1+x}" ]] ; then
-    read -n 1 -p "
+  read -n 1 -p "
   Read, write, or delete password? (r/w/d, default: r) " action
-    printf "\n"
+  printf "\n"
 else
-    action="${1}"
+  action="${1}"
 fi
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
@@ -198,7 +198,7 @@ elif [[ "${action}" =~ ^([dD])$ ]] ; then
     read -p "
   Username to delete? " username
   else
-      username="${2}"
+    username="${2}"
   fi
   write_pass
 
