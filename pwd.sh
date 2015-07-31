@@ -160,8 +160,13 @@ sanity_check () {
 
 sanity_check
 
-read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
-printf "\n"
+if [ -z ${1+x} ]
+then
+    read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
+    printf "\n"
+else
+    action="$1"
+fi
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
   create_username && write_pass
