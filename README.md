@@ -14,13 +14,17 @@ Install with `brew install gpg` or `sudo apt-get install gnupg` or build and ins
 
 # Use
 
-Run the script with `./pwd.sh`
-    
+Run the script interactively with `./pwd.sh`
+
 Type `w` to write a password.
 
-Type `r` to read a password or all passwords.
+Type `r` to read a password(s).
 
 Type `d` to delete a password.
+
+Or, the action and username can be passed on the command line, e.g.,
+
+`./pwd.sh r github` or `./pwd.sh w gmail`
 
 The encrypted file `pwd.sh.safe` and script can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
