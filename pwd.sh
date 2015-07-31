@@ -188,10 +188,7 @@ sanity_check () {
 }
 
 input_file() {
-  read -p "
-  Input File: " in_file
-
-  if [ ! -r $in_file ] ; then
+  if [[ ! -r $in_file ]] ; then
     fail "File ${in_file} is not readable"
   fi
 
@@ -226,6 +223,14 @@ elif [[ "${action}" =~ ^([dD])$ ]] ; then
   fi
   write_pass
 
+elif [[ "${action}" =~ ^([fF])$ ]] ; then
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Input File: " in_file
+  else
+    in_file="${2}"
+  fi
+  input_file
 else
   read_pass "$@"
 fi
