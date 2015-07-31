@@ -23,6 +23,7 @@ get_pass () {
 
   password=''
   prompt="${1}"
+
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then
       break
@@ -57,7 +58,6 @@ decrypt () {
 encrypt () {
   # Encrypt with a password.
 
-
   ${gpg} \
     --symmetric --armor --batch --yes \
     --passphrase-fd 3 \
@@ -67,6 +67,13 @@ encrypt () {
 
 read_pass () {
   # Read a password from safe.
+
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Username to read? (default: all) " username
+  else
+      username="${2}"
+  fi
 
   if [[ -z ${username} || ${username} == "all" ]] ; then
     username=""
@@ -95,8 +102,13 @@ gen_pass () {
 
   len=50
   max=100
-  read -p "
+
+  if [[ -z "${3+x}" ]] ; then
+    read -p "
   Password length? (default: ${len}, max: ${max}) " length
+  else
+    length="${3}"
+  fi
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then
     len=${length}
@@ -111,7 +123,7 @@ write_pass () {
   # Write a password in safe.
 
   # If no password provided, clear the entry by writing an empty line.
-  if [ -z ${userpass+x} ] ; then
+  if [[ -z ${userpass+x} ]] ; then
     new_entry=" "
   else
     new_entry="${username} ${userpass}"
@@ -127,7 +139,7 @@ write_pass () {
   # Filter out any blank lines.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
-  ( if [ -f ${safe} ] ; then
+  ( if [[ -f ${safe} ]] ; then
       decrypt ${password} ${safe} | \
       grep -v -e " ${username}$" || return
     fi ; \
@@ -141,17 +153,26 @@ write_pass () {
 create_username () {
   # Create a new username and password.
 
-  read -p "
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
   Username: " username
-  read -p "
+  else
+    username="${2}"
+  fi
+
+  if [[ -z "${3+x}" ]] ; then
+    read -p "
   Generate password? (y/n, default: y) " rand_pass
+  else
+    rand_pass=""
+  fi
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
   Enter password for \"${username}\": " ; echo
     userpass=$password
   else
-    userpass=$(gen_pass)
+    userpass=$(gen_pass "$@")
     echo "
   Password: ${userpass}"
   fi
@@ -184,24 +205,29 @@ input_file() {
 
 sanity_check
 
-if [ -z ${1+x} ]
-then
-    read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
-    printf "\n"
+if [[ -z "${1+x}" ]] ; then
+  read -n 1 -p "
+  Read, write, or delete password? (r/w/d, default: r) " action
+  printf "\n"
 else
-    action="$1"
+  action="${1}"
 fi
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
-  create_username && write_pass
+  create_username "$@"
+  write_pass
+
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
-  read -p "
-  Username to delete? " username && write_pass
-elif [[ "${action}" =~ ^([fF])$ ]]; then
-  input_file
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Username to delete? " username
+  else
+    username="${2}"
+  fi
+  write_pass
+
 else
-  read -p "
-  Username to read? (default: all) " username && read_pass
+  read_pass "$@"
 fi
 
 tput setaf 2 ; echo "
