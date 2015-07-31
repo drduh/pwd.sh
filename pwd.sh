@@ -6,6 +6,7 @@ set -o errtrace
 set -o nounset
 set -o pipefail
 
+args=("$@")
 gpg=$(command -v gpg || command -v gpg2)
 safe=${PWDSH_SAFE:=pwd.sh.safe}
 
@@ -68,6 +69,13 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Username to read? (default: all) " username
+  else
+      username="${2}"
+  fi
+
   if [[ -z ${username} || ${username} == "all" ]] ; then
     username=""
   fi
@@ -104,7 +112,7 @@ write_pass () {
   # Write a password in safe.
 
   # If no password provided, clear the entry by writing an empty line.
-  if [ -z ${userpass+x} ] ; then
+  if [[ -z ${userpass+x} ]] ; then
     new_entry=" "
   else
     new_entry="${userpass} ${username}"
@@ -118,7 +126,7 @@ write_pass () {
   # Filter out any blank lines.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
-  ( if [ -f ${safe} ] ; then
+  ( if [[ -f ${safe} ]] ; then
       decrypt ${password} ${safe} | \
       grep -v -e " ${username}$" || return
     fi ; \
@@ -132,10 +140,15 @@ write_pass () {
 create_username () {
   # Create a new username and password.
 
-  read -p "
+  if [[ -z "${2+x}" ]] ; then
+      read -p "
   Username: " username
-  read -p "
+      read -p "
   Generate password? (y/n, default: y) " rand_pass
+  else
+      rand_pass=""
+      username="${2}"
+  fi
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
@@ -160,22 +173,29 @@ sanity_check () {
 
 sanity_check
 
-if [ -z ${1+x} ]
-then
-    read -n 1 -p "Read, write, or delete password? (r/w/d, default: r) " action
+if [[ -z "${1+x}" ]] ; then
+    read -n 1 -p "
+  Read, write, or delete password? (r/w/d, default: r) " action
     printf "\n"
 else
-    action="$1"
+    action="${1}"
 fi
 
 if [[ "${action}" =~ ^([wW])$ ]] ; then
-  create_username && write_pass
+  create_username "$@"
+  write_pass
+
 elif [[ "${action}" =~ ^([dD])$ ]] ; then
-  read -p "
-  Username to delete? " username && write_pass
+  if [[ -z "${2+x}" ]] ; then
+    read -p "
+  Username to delete? " username
+  else
+      username="${2}"
+  fi
+  write_pass
+
 else
-  read -p "
-  Username to read? (default: all) " username && read_pass
+  read_pass "$@"
 fi
 
 tput setaf 2 ; echo "
