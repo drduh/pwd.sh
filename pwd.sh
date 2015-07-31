@@ -95,8 +95,13 @@ gen_pass () {
 
   len=50
   max=100
-  read -p "
+
+  if [[ -z "${3+x}" ]] ; then
+    read -p "
   Password length? (default: ${len}, max: ${max}) " length
+  else
+    length="${3}"
+  fi
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then
     len=${length}
@@ -142,11 +147,15 @@ create_username () {
   if [[ -z "${2+x}" ]] ; then
       read -p "
   Username: " username
+  else
+      username="${2}"
+  fi
+
+  if [[ -z "${3+x}" ]] ; then
       read -p "
   Generate password? (y/n, default: y) " rand_pass
   else
       rand_pass=""
-      username="${2}"
   fi
 
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
@@ -154,7 +163,7 @@ create_username () {
   Enter password for \"${username}\": " ; echo
     userpass=$password
   else
-    userpass=$(gen_pass)
+    userpass=$(gen_pass "$@")
     echo "
   Password: ${userpass}"
   fi
