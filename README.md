@@ -20,13 +20,13 @@ Type `r` to read a password(s).
 
 Type `d` to delete a password.
 
-Options can also be passed on the command line, e.g.,
+Options can also be passed on the command line. Here are some examples:
 
-`./pwd.sh w gmail 30` to generate and write a password called 'gmail' with a length of 30 characters, or
+`./pwd.sh w gmail 30` to create a password for 'gmail' with a length of 30 characters. Append `<space>q` to suppress password output.
 
-`./pwd.sh r github` to read the password called 'github', or
+`./pwd.sh r user@github` to read the password for 'user@github'.
 
-`./pwd.sh d dropbox` to delete the password called 'dropbox'.
+`./pwd.sh d dropbox` to delete the password for 'dropbox'.
 
 Combine with other programs by piping output, e.g.,
 
@@ -35,3 +35,8 @@ Combine with other programs by piping output, e.g.,
 The script and `pwd.sh.safe` encrypted file can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
 
 A sample `gpg.conf` configuration file is provided for your consideration.
+
+# Alternatives
+
+[Pass: the standard unix password manager](http://www.passwordstore.org/)
+
