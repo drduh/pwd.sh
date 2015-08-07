@@ -109,7 +109,7 @@ gen_pass () {
 
   # base64: 4 characters for every 3 bytes
   ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
-}
+ }
 
 
 write_pass () {
@@ -161,7 +161,7 @@ create_username () {
   if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
     get_pass "
   Enter password for \"${username}\": " ; echo
-    userpass=$password
+    userpass=${password}
   else
     userpass=$(gen_pass "$@")
     if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then
