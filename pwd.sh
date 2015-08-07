@@ -68,25 +68,25 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
+  if [[ ! -s ${safe} ]] ; then
+    fail "No passwords found"
+  fi
+
   if [[ -z "${2+x}" ]] ; then
     read -p "
   Username to read? (default: all) " username
   else
-      username="${2}"
+    username="${2}"
   fi
 
   if [[ -z ${username} || ${username} == "all" ]] ; then
     username=""
   fi
 
-  if [[ ! -s ${safe} ]] ; then
-    fail "No passwords found"
-  else
-    get_pass "
+  get_pass "
   Enter password to unlock ${safe}: "
-    printf "\n\n"
-    decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
-  fi
+  printf "\n\n"
+  decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
 }
 
 
@@ -167,7 +167,7 @@ create_username () {
   fi
 
   if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then
-      echo "
+    echo "
   Password: ${userpass}"
   fi
 }

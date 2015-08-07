@@ -36,7 +36,9 @@ The script and `pwd.sh.safe` encrypted file can be safely shared between machine
 
 A sample `gpg.conf` configuration file is provided for your consideration.
 
-# Alternatives
+# Recommended software
 
 [Pass: the standard unix password manager](http://www.passwordstore.org/)
+
+[sf-pwgen: generates passwords using OS X Security framework](https://github.com/anders/pwgen)
 
