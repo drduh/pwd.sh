@@ -164,11 +164,10 @@ create_username () {
     userpass=$password
   else
     userpass=$(gen_pass "$@")
-  fi
-
-  if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then
-    echo "
+    if [[ -z "${4+x}" || ! "${4}" =~ ^([qQ])$ ]] ; then
+      echo "
   Password: ${userpass}"
+    fi
   fi
 }
 
