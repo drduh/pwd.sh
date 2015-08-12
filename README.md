@@ -18,6 +18,8 @@ Type `w` to write a password.
 
 Type `r` to read a password(s).
 
+Type `c` to copy a password to the clipboard (mac only).
+
 Type `d` to delete a password.
 
 Options can also be passed on the command line. Here are some examples:
