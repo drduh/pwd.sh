@@ -12,29 +12,37 @@ Requires `gpg`. Install with `brew install gpg` or `sudo apt-get install gnupg` 
 
 # Use
 
-Run the script interactively with `./pwd.sh`
+Run the script interactively with `./pwd.sh` or copy it to a folder in `$PATH`
 
 Type `w` to write a password.
 
-Type `r` to read a password(s).
+Type `r` to read a password.
 
 Type `d` to delete a password.
 
-Options can also be passed on the command line. Here are some examples:
+Options can also be passed on the command line.
 
-`./pwd.sh w gmail 30` to create a password for 'gmail' with a length of 30 characters. Append `<space>q` to suppress password output.
+Create a password with a length of 30 characters for *gmail*:
 
-`./pwd.sh r user@github` to read the password for 'user@github'.
+    ./pwd.sh w gmail 30
 
-`./pwd.sh d dropbox` to delete the password for 'dropbox'.
+Append `<space>q` to suppress generated password output.
 
-Combine with other programs by piping output, e.g.,
+Read the password for *user@github*:
 
-`./pwd.sh r github | grep github | cut -f1 -d ' ' | pbcopy` to copy a password to clipboard on OS X.
+    ./pwd.sh r user@github
 
-The script and `pwd.sh.safe` encrypted file can be safely shared between machines over public channels (Google Drive, Dropbox, etc).
+Delete the password for *dropbox*:
 
-A sample `gpg.conf` configuration file is provided for your consideration.
+    ./pwd.sh d dropbox
+
+Copy the password for *github* to clipboard on OS X:
+
+    ./pwd.sh r github | cut -f1 -d ' ' | tr -d '\n' | pbcopy
+
+The script and `pwd.sh.safe` encrypted file can be safely shared between machines, for example through Google Drive or Dropbox.
+
+An example `gpg.conf` configuration file is provided for your consideration.
 
 # Similar software
 
