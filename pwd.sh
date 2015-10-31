@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 #
-# Script for managing passwords in a symmetrically encrypted file using GnuPG.
+# Script for managing passwords in a GunPG symmetrically encrypted file.
 
 set -o errtrace
 set -o nounset
 set -o pipefail
 
-gpg=$(command -v gpg || command -v gpg2)
-safe=${PWDSH_SAFE:=pwd.sh.safe}
+filter="$(command -v grep) --invert-match --regexp"
+gpg="$(command -v gpg || command -v gpg2)"
+safe="${PWDSH_SAFE:=pwd.sh.safe}"
 
 
 fail () {
@@ -40,7 +41,7 @@ get_pass () {
     fi
   done
 
-  if [[ -z ${password} ]] ; then
+  if [[ -z "${password}" ]] ; then
     fail "No password provided"
   fi
 }
@@ -79,7 +80,7 @@ read_pass () {
     username="${2}"
   fi
 
-  if [[ -z ${username} || ${username} == "all" ]] ; then
+  if [[ -z "${username}" || "${username}" == "all" ]] ; then
     username=""
   fi
 
@@ -108,7 +109,7 @@ gen_pass () {
   fi
 
   # base64: 4 characters for every 3 bytes
-  ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
+  ${gpg} --gen-random --armor 0 "$((${max} * 3/4))" | cut -c -${len}
  }
 
 
@@ -116,33 +117,33 @@ write_pass () {
   # Write a password in safe.
 
   # If no password provided, clear the entry by writing an empty line.
-  if [[ -z ${userpass+x} ]] ; then
-    new_entry=" "
+  if [[ -z "${userpass+x}" ]] ; then
+    entry=" "
   else
-    new_entry="${userpass} ${username}"
+    entry="${userpass} ${username}"
   fi
 
   get_pass "
   Enter password to unlock ${safe}: " ; echo
 
   # If safe exists, decrypt it and filter out username, or bail on error.
-  # If successful, append new entry, or blank line.
+  # If successful, append entry, or blank line.
   # Filter out any blank lines.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
-  ( if [[ -f ${safe} ]] ; then
+  ( if [[ -f "${safe}" ]] ; then
       decrypt ${password} ${safe} | \
-      grep -v -e " ${username}$" || return
+      ${filter} " ${username}$" || return
     fi ; \
-    echo "${new_entry}") | \
-    grep -v -e "^[[:space:]]*$" | \
+    echo "${entry}") | \
+    ${filter} "^[[:space:]]*$" | \
     encrypt ${password} ${safe}.new - || fail "Write to safe failed"
     mv ${safe}.new ${safe}
 }
 
 
 create_username () {
-  # Create a new username and password.
+  # Create username with password.
 
   if [[ -z "${2+x}" ]] ; then
     read -p "
@@ -173,7 +174,7 @@ create_username () {
 
 
 sanity_check () {
-  # Make sure required programs are installed and can be executed.
+  # Make sure required programs are installed and are executable.
 
   if [[ -z ${gpg} && ! -x ${gpg} ]] ; then
     fail "GnuPG is not available"
