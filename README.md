@@ -12,7 +12,7 @@ Requires `gpg`. Install with `brew install gpg` or `sudo apt-get install gnupg` 
 
 # Use
 
-Run the script interactively with `./pwd.sh` or copy it to a folder in `$PATH`
+Run the script interactively using `./pwd.sh` or symlink to a folder in `$PATH` and run directly.
 
 Type `w` to write a password.
 
@@ -22,33 +22,35 @@ Type `d` to delete a password.
 
 Options can also be passed on the command line.
 
-Create a password with a length of 30 characters for *gmail*:
+Create password with length of 30 characters for *gmail*:
 
     ./pwd.sh w gmail 30
 
 Append `<space>q` to suppress generated password output.
 
-Read the password for *user@github*:
+Read password for *user@github*:
 
     ./pwd.sh r user@github
 
-Delete the password for *dropbox*:
+Delete password for *dropbox*:
 
     ./pwd.sh d dropbox
 
-Copy the password for *github* to clipboard on OS X:
+Copy password for *github* to clipboard on OS X:
 
     ./pwd.sh r github | cut -f1 -d ' ' | tr -d '\n' | pbcopy
 
-The script and `pwd.sh.safe` encrypted file can be safely shared between machines, for example through Google Drive or Dropbox.
+The script and `pwd.sh.safe` encrypted file can be safely shared between computers, for example through Google Drive or Dropbox.
 
-An example `gpg.conf` configuration file is provided for your consideration.
+A recommended `~/.gnupg/gpg.conf` configuration is included in this repository.
 
 # Similar software
 
 [Pass: the standard unix password manager](http://www.passwordstore.org/)
 
 [caodonnell/passman.sh: a pwd.sh fork](https://github.com/caodonnell/passman.sh)
+
+[bndw/pick: a minimal password manager for OS X and Linux](https://github.com/bndw/pick)
 
 [anders/pwgen: generate passwords using OS X Security framework](https://github.com/anders/pwgen)
 
