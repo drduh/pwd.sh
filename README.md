@@ -38,7 +38,7 @@ Delete password for *dropbox*:
 
 Copy password for *github* to clipboard on OS X:
 
-    ./pwd.sh r github | cut -f1 -d ' ' | tr -d '\n' | pbcopy
+    ./pwd.sh r github | cut -f 1 -d ' ' | awk 'NR==3{print $1}' | pbcopy
 
 The script and `pwd.sh.safe` encrypted file can be safely shared between computers, for example through Google Drive or Dropbox.
 
