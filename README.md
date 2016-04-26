@@ -6,13 +6,13 @@ Script to manage passwords in an encrypted file using gpg.
 
 # Installation
 
-    git clone https://github.com/drduh/pwd.sh && cd pwd.sh
+    git clone https://github.com/drduh/pwd.sh
 
-Requires `gpg`. Install with `brew install gpg` or `sudo apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
+Requires `gpg` - install with `brew install gpg` or `sudo apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
 
 # Use
 
-Run the script interactively using `./pwd.sh` or symlink to a folder in `$PATH` and run directly.
+Run the script interactively using `cd pwd.sh && ./pwd.sh` or symlink to a folder in `$PATH` and run directly.
 
 Type `w` to write a password.
 
@@ -53,4 +53,3 @@ A recommended `~/.gnupg/gpg.conf` configuration is included in this repository.
 [bndw/pick: a minimal password manager for OS X and Linux](https://github.com/bndw/pick)
 
 [anders/pwgen: generate passwords using OS X Security framework](https://github.com/anders/pwgen)
-
