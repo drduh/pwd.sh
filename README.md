@@ -40,9 +40,9 @@ Copy password for *github* to clipboard on OS X:
 
     ./pwd.sh r github | cut -f 1 -d ' ' | awk 'NR==3{print $1}' | pbcopy
 
-The script and `pwd.sh.safe` encrypted file can be safely shared between computers, for example through Google Drive or Dropbox.
+The script and encrypted `pwd.sh.safe` file can be safely shared between computers, for example through Google Drive or Dropbox.
 
-A recommended `~/.gnupg/gpg.conf` configuration is included in this repository.
+A recommended `~/.gnupg/gpg.conf` configuration file can be found at [drduh/config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf).
 
 # Similar software
 
