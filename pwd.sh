@@ -14,7 +14,7 @@ safe="${PWDSH_SAFE:=pwd.sh.safe}"
 fail () {
   # Print an error message and exit.
 
-  tput setaf 1 ; echo "Error: ${1}" ; tput sgr0
+  tput setaf 1 1 1 ; echo "Error: ${1}" ; tput sgr0
   exit 1
 }
 
@@ -209,6 +209,6 @@ else
   read_pass "$@"
 fi
 
-tput setaf 2 ; echo "
+tput setaf 2 2 2 ; echo "
 Done" ; tput sgr0
 
