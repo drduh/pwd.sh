@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 #
-# Script for managing passwords in a GunPG symmetrically encrypted file.
+# Script for managing passwords in a GnuPG symmetrically encrypted file.
 
 set -o errtrace
 set -o nounset
 set -o pipefail
 
-filter="$(command -v grep) --invert-match --regexp"
+filter="$(command -v grep) -v --regexp"
 gpg="$(command -v gpg || command -v gpg2)"
 safe="${PWDSH_SAFE:=pwd.sh.safe}"
 
@@ -87,7 +87,7 @@ read_pass () {
   get_pass "
   Enter password to unlock ${safe}: "
   printf "\n\n"
-  decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
+  decrypt ${password} ${safe} | grep " ${username}$" || fail "Decryption failed"
 }
 
 
