@@ -87,7 +87,7 @@ read_pass () {
   get_pass "
   Enter password to unlock ${safe}: "
   printf "\n\n"
-  decrypt ${password} ${safe} | grep " ${username}$" || fail "Decryption failed"
+  decrypt ${password} ${safe} | grep " ${username}" || fail "Decryption failed"
 }
 
 
