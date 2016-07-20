@@ -6,7 +6,7 @@ set -o errtrace
 set -o nounset
 set -o pipefail
 
-filter="$(command -v grep) -v --regexp"
+filter="$(command -v grep) -v -E"
 gpg="$(command -v gpg || command -v gpg2)"
 safe="${PWDSH_SAFE:=pwd.sh.safe}"
 
@@ -128,7 +128,7 @@ write_pass () {
 
   # If safe exists, decrypt it and filter out username, or bail on error.
   # If successful, append entry, or blank line.
-  # Filter out any blank lines.
+  # Filter blank lines and previous timestamp, append fresh timestamp.
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
   ( if [[ -f "${safe}" ]] ; then
@@ -136,7 +136,7 @@ write_pass () {
       ${filter} " ${username}$" || return
     fi ; \
     echo "${entry}") | \
-    ${filter} "^[[:space:]]*$" | \
+    (${filter} "^[[:space:]]*$|^mtime:[[:digit:]]+$";echo mtime:$(date +%s)) | \
     encrypt ${password} ${safe}.new - || fail "Write to safe failed"
     mv ${safe}.new ${safe}
 }
@@ -211,4 +211,3 @@ fi
 
 tput setaf 2 2 2 ; echo "
 Done" ; tput sgr0
-
