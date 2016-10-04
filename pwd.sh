@@ -74,7 +74,7 @@ read_pass () {
   fi
 
   if [[ -z "${2+x}" ]] ; then
-    read -p "
+    read -r -p "
   Username to read? (default: all) " username
   else
     username="${2}"
@@ -146,7 +146,7 @@ create_username () {
   # Create username with password.
 
   if [[ -z "${2+x}" ]] ; then
-    read -p "
+    read -r -p "
   Username: " username
   else
     username="${2}"
