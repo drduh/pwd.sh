@@ -90,6 +90,11 @@ read_pass () {
   decrypt ${password} ${safe} | grep -F " ${username}" || fail "Decryption failed"
 }
 
+copy_pass () {
+  read_pass"$@" | cut -d ' ' -f1 | pbcopy
+  printf "\nPassword copied to clipboard"
+}
+
 
 gen_pass () {
   # Generate a password.
@@ -186,7 +191,7 @@ sanity_check
 
 if [[ -z "${1+x}" ]] ; then
   read -n 1 -p "
-  Read, write, or delete password? (r/w/d, default: r) " action
+  Read, copy, write, or delete password? (r/c/w/d, default: r) " action
   printf "\n"
 else
   action="${1}"
@@ -204,6 +209,9 @@ elif [[ "${action}" =~ ^([dD])$ ]] ; then
     username="${2}"
   fi
   write_pass
+
+elif [[ "${action}" =~ ^([cC])$ ]] ; then
+  copy_pass "$@"
 
 else
   read_pass "$@"
