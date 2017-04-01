@@ -1,4 +1,4 @@
-# pwd.sh
+# pwd.sh [![CodeHunt.io](https://img.shields.io/badge/vote-codehunt.io-02AFD1.svg)](http://codehunt.io/sub/pwd-sh/?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 Script to manage passwords in an encrypted file using gpg.
 
