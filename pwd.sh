@@ -76,7 +76,7 @@ read_pass () {
   Password to unlock ${safe}: " ; done
   printf "\n\n"
 
-  decrypt ${password} ${safe} | grep -F " ${username}" \
+  decrypt ${password} ${safe} | grep -F " ${username}" | sort -k2 \
     || fail "Decryption failed"
 }
 
