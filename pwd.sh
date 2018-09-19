@@ -76,7 +76,7 @@ read_pass () {
   Password to unlock ${safe}: " ; done
   printf "\n\n"
 
-  decrypt ${password} ${safe} | grep -F " ${username}" \
+  decrypt "${password}" ${safe} | grep -F " ${username}" \
     || fail "Decryption failed"
 }
 
@@ -120,12 +120,12 @@ write_pass () {
   # Finally, encrypt it all to a new safe file, or fail.
   # If successful, update to new safe file.
   ( if [[ -f "${safe}" ]] ; then
-      decrypt ${password} ${safe} | \
+      decrypt "${password}" ${safe} | \
       ${filter} " ${username}$" || return
     fi ; \
     echo "${entry}") | \
     (${filter} "^[[:space:]]*$|^mtime:[[:digit:]]+$";echo mtime:$(date +%s)) | \
-    encrypt ${password} ${safe}.new - || fail "Write to safe failed"
+    encrypt "${password}" ${safe}.new - || fail "Write to safe failed"
     mv ${safe}{.new,}
 }
 
