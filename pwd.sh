@@ -45,7 +45,7 @@ get_pass () {
 decrypt () {
   # Decrypt with a password.
 
-  echo "${1}" | ${gpg} --armor --batch \
+  echo "${1}" | ${gpg} --armor --batch --no-symkey-cache \
     --decrypt --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
@@ -54,7 +54,7 @@ encrypt () {
   # Encrypt with a password.
 
   ${gpg} --armor --batch \
-    --symmetric --yes --passphrase-fd 3 \
+    --symmetric --yes --passphrase-fd 3 --no-symkey-cache \
     --output "${2}" "${3}" 3< <(echo "${1}")
 }
 
