@@ -4,56 +4,61 @@ Script to manage passwords in an encrypted file using gpg.
 
 ![screencast gif](https://i.imgur.com/sQoF3VN.gif)
 
-**New!** [Purse](https://github.com/drduh/Purse) is a fork which uses public key authentication instead of a master passphrase and can integrate with YubiKey.
+**New!** [drduh/Purse](https://github.com/drduh/Purse) is a fork which uses public key authentication instead of a master passphrase and can integrate with YubiKey.
 
 # Installation
 
-    git clone https://github.com/drduh/pwd.sh
-
-Requires `gpg` - install with `brew install gpg` or `sudo apt-get install gnupg` or build and install it from [source](https://www.gnupg.org/download/index.html).
+```console
+$ git clone https://github.com/drduh/pwd.sh
+```
 
 # Use
 
-Run the script interactively using `cd pwd.sh && ./pwd.sh` or symlink to a folder in `$PATH` and run directly.
+`cd pwd.sh` and run the script interactively using `./pwd.sh`
 
-Type `w` to write a password.
-
-Type `r` to read a password.
-
-Type `d` to delete a password.
+* Type `w` to write a password.
+* Type `r` to read a password.
+* Type `d` to delete a password.
+* Type `h` to print the help text.
 
 Options can also be passed on the command line.
 
-Create password with length of 30 characters for *gmail*:
+Examples:
 
-    ./pwd.sh w gmail 30
+Create 30-character password for `gmail`:
 
-Append `<space>q` to suppress generated password output.
+```console
+$ ./pwd.sh w gmail 30
+```
 
-Read password for *user@github*:
+Append `q` to create a password without displaying it.
 
-    ./pwd.sh r user@github
+Read password for `user@github`:
 
-Delete password for *dropbox*:
+```console
+$ ./pwd.sh r user@github
+```
 
-    ./pwd.sh d dropbox
+Delete password for `dropbox`:
 
-Copy password for *github* to clipboard on OS X:
+```console
+$ ./pwd.sh d dropbox
+```
 
-    ./pwd.sh r github | cut -f 1 -d ' ' | awk 'NR==3{print $1}' | pbcopy
+Copy password for `github` to clipboard (substitute `pbcopy` on macOS):
 
-The script and encrypted `pwd.sh.safe` file can be safely shared between computers, for example through Google Drive or Dropbox.
+```console
+$ ./pwd.sh r github | cut -f 1 -d ' ' | awk 'NR==3{print $1}' | xclip
+```
 
-A recommended `~/.gnupg/gpg.conf` configuration file can be found at [drduh/config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf).
+The script and encrypted `pwd.sh.safe` file can be publicly shared between trusted computers.
+
+See [drduh/config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GPG options.
 
 # Similar software
 
-[Purse](https://github.com/drduh/Purse)
-
-[Pass: the standard unix password manager](http://www.passwordstore.org/)
-
-[caodonnell/passman.sh: a pwd.sh fork](https://github.com/caodonnell/passman.sh)
-
-[bndw/pick: a minimal password manager for OS X and Linux](https://github.com/bndw/pick)
-
-[anders/pwgen: generate passwords using OS X Security framework](https://github.com/anders/pwgen)
+* [drduh/Purse](https://github.com/drduh/Purse)
+* [Pass: the standard unix password manager](https://www.passwordstore.org/)
+* [caodonnell/passman.sh: a pwd.sh fork](https://github.com/caodonnell/passman.sh)
+* [bndw/pick: command-line password manager for macOS and Linux](https://github.com/bndw/pick)
+* [anders/pwgen: generate passwords using OS X Security framework](https://github.com/anders/pwgen)

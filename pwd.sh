@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
+# https://github.com/drduh/pwd.sh
 
 set -o errtrace
 set -o nounset
 set -o pipefail
+
+umask 077
 
 filter="$(command -v grep) -v -E"
 gpg="$(command -v gpg || command -v gpg2)"
@@ -62,7 +65,7 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
-  if [[ ! -s ${safe} ]] ; then fail "No password safe found" ; fi
+  if [[ ! -s ${safe} ]] ; then fail "${safe} not found" ; fi
 
   if [[ -z "${2+x}" ]] ; then read -r -p "
   Username (Enter for all): " username
@@ -84,8 +87,8 @@ read_pass () {
 gen_pass () {
   # Generate a password.
 
-  len=50
-  max=100
+  len=20
+  max=80
 
   if [[ -z "${3+x}" ]] ; then read -p "
 
@@ -158,16 +161,14 @@ print_help () {
   echo "
   pwd.sh is a shell script to manage passwords with GnuPG symmetric encryption.
 
-  The script can be run interactively as './pwd.sh' or with the following args:
+  pwd.sh can be used interactively as or with one of the following options:
 
     * 'r' to read a password
     * 'w' to write a password
     * 'd' to delete a password
-    * 'h' to see this help text
+    * 'h' to print this help text
 
-  A username can be supplied as an additional argument or 'all' for all entries.
-
-  For writing, a password length can be appended. Append 'q' to suppress output.
+  A username, password length and 'q' options can also be used.
 
   Examples:
 
@@ -183,7 +184,7 @@ print_help () {
 
       ./pwd.sh w github 50
 
-    * To suppress the generated password:
+    * Generate a password and write without displaying it:
 
       ./pwd.sh w github 50 q
 
@@ -191,11 +192,7 @@ print_help () {
 
       ./pwd.sh d mail
 
-  A password cannot be supplied as an argument, nor is used as one throughout
-  the script, to prevent it from appearing in process listing or logs.
-
-  To report a bug, visit https://github.com/drduh/pwd.sh
-  "
+  A password cannot be supplied as an argument, nor is used as one in the script, to prevent it from appearing in process listing or logs."
 }
 
 
