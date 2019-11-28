@@ -73,7 +73,7 @@ $ ./pwd.sh b
 Restore an archive from backup:
 
 ```console
-$ tar xvf pwd*tar""
+$ tar xvf pwd*tar
 ```
 
 The backup contains only encrypted files and can be publicly shared for use on trusted computers.
@@ -83,7 +83,7 @@ See [drduh/config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf
 # Similar software
 
 * [drduh/Purse](https://github.com/drduh/Purse)
-* [Pass: the standard unix password manager](https://www.passwordstore.org/)
+* [zx2c4/password-store](https://github.com/zx2c4/password-store)
 * [caodonnell/passman.sh: a pwd.sh fork](https://github.com/caodonnell/passman.sh)
 * [bndw/pick: command-line password manager for macOS and Linux](https://github.com/bndw/pick)
 * [anders/pwgen: generate passwords using OS X Security framework](https://github.com/anders/pwgen)
