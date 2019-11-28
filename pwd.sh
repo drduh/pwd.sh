@@ -12,8 +12,8 @@ umask 077
 now=$(date +%s)
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
-backuptar="${PWDSH_BACKUP:=pwd.sh.backup.$(date +%F).tar}"
-safeix="${PWDSH_INDEX:=pwd.sh.index}"
+backuptar="${PWDSH_BACKUP:=pwd.$(hostname).$(date +%F).tar}"
+safeix="${PWDSH_INDEX:=pwd.index}"
 safedir="${PWDSH_SAFE:=safe}"
 timeout=9
 
@@ -105,8 +105,8 @@ gen_pass () {
 write_pass () {
   # Write a password and update index file.
 
-  get_pass "
-  Password to unlock ${safeix}: "
+  while [[ -z "${password}" ]] ; do get_pass "
+  Password to unlock ${safeix}: " ; done
   printf "\n"
 
   fpath=$(tr -dc "[:lower:]" < /dev/urandom | fold -w8 | head -n1)
@@ -120,6 +120,7 @@ write_pass () {
     printf "${username}@${now}:${spath}\n") | \
     encrypt "${password}" ${safeix}.${now} - || \
       fail "Failed to put ${safeix}.${now}"
+
   mv ${safeix}{.${now},}
 }
 
@@ -203,9 +204,11 @@ print_help () {
         ./pwd.sh l
         ./pwd.sh r userName@1574723625
 
-    * Create and restore a backup:
+    * Create an archive for backup:
         ./pwd.sh b
-        tar xvf pwd.sh.backup.*.tar"""
+
+    * Restore an archive from backup:
+        tar xvf pwd*tar"""
 }
 
 if [[ -z ${gpg} && ! -x ${gpg} ]] ; then fail "GnuPG is not available" ; fi

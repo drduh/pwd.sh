@@ -70,6 +70,12 @@ Create an archive for backup:
 $ ./pwd.sh b
 ```
 
+Restore an archive from backup:
+
+```console
+$ tar xvf pwd*tar""
+```
+
 The backup contains only encrypted files and can be publicly shared for use on trusted computers.
 
 See [drduh/config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GPG configuration options.
