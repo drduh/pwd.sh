@@ -105,6 +105,7 @@ gen_pass () {
 write_pass () {
   # Write a password and update index file.
 
+  password=""
   while [[ -z "${password}" ]] ; do get_pass "
   Password to unlock ${safeix}: " ; done
   printf "\n"
