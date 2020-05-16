@@ -15,12 +15,12 @@ gpg="$(command -v gpg || command -v gpg2)"
 backuptar="${PWDSH_BACKUP:=pwd.$(hostname).$(date +%F).tar}"
 safeix="${PWDSH_INDEX:=pwd.index}"
 safedir="${PWDSH_SAFE:=safe}"
-timeout=9
+timeout=30
 
 fail () {
   # Print an error message and exit.
 
-  tput setaf 1 1 1 ; printf "\nError: ${1}\n" ; tput sgr0
+  tput setaf 1 1 1 ; printf "\nError: %s\n" "${1}" ; tput sgr0
   exit 1
 }
 
@@ -50,7 +50,7 @@ get_pass () {
 decrypt () {
   # Decrypt with GPG.
 
-  printf '%s\n' "${1}" | ${gpg} --armor --batch --no-symkey-cache \
+  printf "%s\n" "${1}" | ${gpg} --armor --batch --no-symkey-cache \
     --decrypt --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
@@ -78,11 +78,11 @@ read_pass () {
   Password to unlock ${safeix}: " ; done
   printf "\n"
 
-  spath=$(decrypt ${password} ${safeix} | \
+  spath=$(decrypt "${password}" "${safeix}" | \
     grep -F "${username}" | tail -n1 | cut -d : -f2) || \
       fail "Failed to decrypt ${safeix}"
 
-  clip <(decrypt ${password} ${spath}) || \
+  clip <(decrypt "${password}" "${spath}") || \
     fail "Failed to decrypt ${spath}"
 }
 
@@ -92,14 +92,14 @@ gen_pass () {
   len=20
   max=80
 
-  if [[ -z "${3+x}" ]] ; then read -p "
+  if [[ -z "${3+x}" ]] ; then read -r -p "
   Password length (default: ${len}, max: ${max}): " length
   else length="${3}" ; fi
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then len=${length} ; fi
 
   # base64: 4 characters for every 3 bytes
-  ${gpg} --armor --gen-random 0 "$((${max} * 3/4))" | cut -c -"${len}"
+  ${gpg} --armor --gen-random 0 "$((max * 3 / 4))" | cut -c -"${len}"
 }
 
 write_pass () {
@@ -113,16 +113,16 @@ write_pass () {
   fpath=$(tr -dc "[:lower:]" < /dev/urandom | fold -w8 | head -n1)
   spath=${safedir}/${fpath}
   printf '%s\n' "${userpass}" | \
-    encrypt "${password}" ${spath} - || \
+    encrypt "${password}" "${spath}" - || \
       fail "Failed to put ${spath}"
 
   ( if [[ -f "${safeix}" ]] ; then
-      decrypt "${password}" ${safeix} || return ; fi
-    printf "${username}@${now}:${spath}\n") | \
-    encrypt "${password}" ${safeix}.${now} - || \
+      decrypt "${password}" "${safeix}" || return ; fi
+    printf "%s@%s:%s\n" "${username}" "${now}" "${spath}") | \
+    encrypt "${password}" "${safeix}.${now}" - || \
       fail "Failed to put ${safeix}.${now}"
 
-  mv ${safeix}{.${now},}
+  mv -v "${safeix}.${now}" "${safeix}"
 }
 
 list_entry () {
@@ -134,22 +134,22 @@ list_entry () {
   Password to unlock ${safeix}: " ; done
   printf "\n\n"
 
-  decrypt ${password} ${safeix} || fail "Decryption failed"
+  decrypt ${password} "${safeix}" || fail "Decryption failed"
 }
 
 backup () {
   # Archive encrypted index and safe directory.
 
-  if [[ -f ${safeix} && -d ${safedir} ]] ; then \
-    tar cfv ${backuptar} ${safeix} ${safedir}
+  if [[ -f "${safeix}" && -d "${safedir}" ]] ; then \
+    tar cfv "${backuptar}" "${safeix}" "${safedir}"
   else fail "Nothing to archive" ; fi
-  printf "\nArchived ${backuptar}\n" ; \
+  printf "\nArchived %s\n" "${backuptar}" ; \
 }
 
 clip () {
   # Use clipboard and clear after timeout.
 
-  ${copy} < ${1}
+  ${copy} < "${1}"
 
   printf "\n"
   shift
@@ -214,10 +214,12 @@ print_help () {
 
 if [[ -z ${gpg} && ! -x ${gpg} ]] ; then fail "GnuPG is not available" ; fi
 
-if [[ ! -d ${safedir} ]] ; then mkdir -p ${safedir} ; fi
+if [[ -z ${copy} && ! -x ${copy} ]] ; then fail "Clipboard is not available" ; fi
 
-chmod -R 0600 ${safeix}  2>/dev/null
-chmod -R 0700 ${safedir} 2>/dev/null
+if [[ ! -d "${safedir}" ]] ; then mkdir -p "${safedir}" ; fi
+
+chmod -R 0600 "${safeix}"  2>/dev/null
+chmod -R 0700 "${safedir}" 2>/dev/null
 
 password=""
 action=""
@@ -244,6 +246,6 @@ elif [[ "${action}" =~ ^([wW])$ ]] ; then
 
 else read_pass "$@" ; fi
 
-chmod -R 0400 ${safeix} ${safedir} 2>/dev/null
+chmod -R 0400 "${safeix}" "${safedir}" 2>/dev/null
 
 tput setaf 2 2 2 ; printf "\nDone\n" ; tput sgr0
