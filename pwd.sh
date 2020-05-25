@@ -12,10 +12,12 @@ umask 077
 now=$(date +%s)
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
+gpgconf="${HOME}/.gnupg/gpg.conf"
 backuptar="${PWDSH_BACKUP:=pwd.$(hostname).$(date +%F).tar}"
 safeix="${PWDSH_INDEX:=pwd.index}"
 safedir="${PWDSH_SAFE:=safe}"
-timeout=30
+script="$(basename $BASH_SOURCE)"
+timeout=10
 
 fail () {
   # Print an error message and exit.
@@ -122,7 +124,7 @@ write_pass () {
     encrypt "${password}" "${safeix}.${now}" - || \
       fail "Failed to put ${safeix}.${now}"
 
-  mv -v "${safeix}.${now}" "${safeix}"
+  mv "${safeix}.${now}" "${safeix}"
 }
 
 list_entry () {
@@ -141,8 +143,12 @@ backup () {
   # Archive encrypted index and safe directory.
 
   if [[ -f "${safeix}" && -d "${safedir}" ]] ; then \
-    tar cfv "${backuptar}" "${safeix}" "${safedir}"
+    cp "${gpgconf}" "gpg.conf.${now}"
+    tar cfv "${backuptar}" \
+      "${safeix}" "${safedir}" "gpg.conf.${now}" "${script}"
+    rm "gpg.conf.${now}"
   else fail "Nothing to archive" ; fi
+
   printf "\nArchived %s\n" "${backuptar}" ; \
 }
 
@@ -215,6 +221,8 @@ print_help () {
 if [[ -z ${gpg} && ! -x ${gpg} ]] ; then fail "GnuPG is not available" ; fi
 
 if [[ -z ${copy} && ! -x ${copy} ]] ; then fail "Clipboard is not available" ; fi
+
+if [[ ! -f ${gpgconf} ]] ; then fail "GnuPG config is not available" ; fi
 
 if [[ ! -d "${safedir}" ]] ; then mkdir -p "${safedir}" ; fi
 

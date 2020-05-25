@@ -6,15 +6,12 @@ It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decry
 
 # Release notes
 
-## Version 1 (2015)
+## Version 2 (2020)
 
-The original release which has been available for general use and review since July 2015. There are no known bugs nor security vulnerabilities identified in this stable version of pwd.sh. Compatible on Linux, OpenBSD, macOS.
-
-## Version 2b (2019)
-
-The second release of pwd.sh features several security and reliability improvements, and is an optional upgrade. Currently in beta testing. Compatible on Linux, OpenBSD, macOS.
+The second release of pwd.sh features many security and reliability improvements, and is a recommended upgrade. Compatible on Linux, OpenBSD, macOS.
 
 Changelist:
+
 * Passwords are now encrypted as individual files, rather than all encrypted as a single flat file.
 * Individual password filenames are random, mapped to usernames in an encrypted index file.
 * Index and password files are now "immutable" using chmod while pwd.sh is not running.
@@ -25,6 +22,10 @@ Changelist:
 * Removed option: delete password; the index is now a permanent ledger.
 * Removed option: read all passwords; no use case for having a single command.
 * Removed option: suppress generated password output; should be read from safe to verify save.
+
+## Version 1 (2015)
+
+The original release which has been available for general use and review since July 2015. There are no known bugs nor security vulnerabilities identified in this stable version of pwd.sh. Compatible on Linux, OpenBSD, macOS.
 
 # Use
 
