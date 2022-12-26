@@ -10,6 +10,10 @@ It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decry
 
 The second release of pwd.sh features many security and reliability improvements, and is a recommended upgrade. Compatible on Linux, OpenBSD, macOS.
 
+Known Issues:
+
+* Newer versions of macOS error with `tr: Illegal byte sequence` - see [issue #36](https://github.com/drduh/pwd.sh/issues/36)
+
 Changelist:
 
 * Passwords are now encrypted as individual files, rather than all encrypted as a single flat file.
