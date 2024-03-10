@@ -1,28 +1,32 @@
 #!/usr/bin/env bash
-# https://github.com/drduh/pwd.sh
-
+# https://github.com/drduh/pwd.sh/blob/master/pwd.sh
 set -o errtrace
 set -o nounset
 set -o pipefail
-
-#set -x # uncomment to debug
+#set -x  # uncomment to debug
 
 umask 077
 
-now=$(date +%s)
-copy="$(command -v xclip || command -v pbcopy)"
-gpg="$(command -v gpg || command -v gpg2)"
+cb_timeout=10         # seconds to keep password on clipboard
+daily_backup="false"  # if true, create daily archive on write
+pass_copy="false"     # if true, keep password on clipboard before write
+pass_len=14           # default password length
+pass_chars="[:alnum:]!@#$%^&*();:+="
+
 gpgconf="${HOME}/.gnupg/gpg.conf"
 backuptar="${PWDSH_BACKUP:=pwd.$(hostname).$(date +%F).tar}"
 safeix="${PWDSH_INDEX:=pwd.index}"
 safedir="${PWDSH_SAFE:=safe}"
-script="$(basename $BASH_SOURCE)"
-timeout=10
+
+now="$(date +%s)"
+copy="$(command -v xclip || command -v pbcopy)"
+gpg="$(command -v gpg || command -v gpg2)"
+script="$(basename "${BASH_SOURCE}")"
 
 fail () {
   # Print an error message and exit.
 
-  tput setaf 1 1 1 ; printf "\nError: %s\n" "${1}" ; tput sgr0
+  tput setaf 1 ; printf "\nError: %s\n" "${1}" ; tput sgr0
   exit 1
 }
 
@@ -52,7 +56,8 @@ get_pass () {
 decrypt () {
   # Decrypt with GPG.
 
-  printf "%s\n" "${1}" | ${gpg} --armor --batch --no-symkey-cache \
+  printf "%s\n" "${1}" | \
+    ${gpg} --armor --batch --no-symkey-cache \
     --decrypt --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
@@ -91,17 +96,14 @@ read_pass () {
 gen_pass () {
   # Generate a password using GPG.
 
-  len=20
-  max=80
-
   if [[ -z "${3+x}" ]] ; then read -r -p "
-  Password length (default: ${len}, max: ${max}): " length
+  Password length (default: ${pass_len}): " length
   else length="${3}" ; fi
 
-  if [[ ${length} =~ ^[0-9]+$ ]] ; then len=${length} ; fi
+  if [[ ${length} =~ ^[0-9]+$ ]] ; then pass_len=${length} ; fi
 
-  # base64: 4 characters for every 3 bytes
-  ${gpg} --armor --gen-random 0 "$((max * 3 / 4))" | cut -c -"${len}"
+  LC_LANG=C tr -dc "${pass_chars}" < /dev/urandom | \
+    fold -w "${pass_len}" | head -1
 }
 
 write_pass () {
@@ -112,11 +114,16 @@ write_pass () {
   Password to unlock ${safeix}: " ; done
   printf "\n"
 
-  fpath=$(LC_LANG=C tr -dc "[:lower:]" < /dev/urandom | fold -w8 | head -n1)
-  spath=${safedir}/${fpath}
+  if [[ "${pass_copy}" = "true" ]] ; then
+    clip <(printf '%s' "${userpass}")
+  fi
+
+  fpath="$(LC_LANG=C tr -dc '[:lower:]' < /dev/urandom | fold -w10 | head -1)"
+  spath="${safedir}/${fpath}"
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
       fail "Failed to put ${spath}"
+  userpass=""
 
   ( if [[ -f "${safeix}" ]] ; then
       decrypt "${password}" "${safeix}" || return ; fi
@@ -136,20 +143,21 @@ list_entry () {
   Password to unlock ${safeix}: " ; done
   printf "\n\n"
 
-  decrypt ${password} "${safeix}" || fail "Decryption failed"
+  decrypt "${password}" "${safeix}" || \
+    fail "Decryption failed"
 }
 
 backup () {
-  # Archive encrypted index and safe directory.
+  # Archive index, safe and configuration.
 
-  if [[ -f "${safeix}" && -d "${safedir}" ]] ; then \
+  if [[ -f "${safeix}" && -d "${safedir}" ]] ; then
     cp "${gpgconf}" "gpg.conf.${now}"
-    tar cfv "${backuptar}" \
+    tar --create --file "${backuptar}" \
       "${safeix}" "${safedir}" "gpg.conf.${now}" "${script}"
     rm "gpg.conf.${now}"
   else fail "Nothing to archive" ; fi
 
-  printf "\nArchived %s\n" "${backuptar}" ; \
+  printf "\nArchived %s\n" "${backuptar}"
 }
 
 clip () {
@@ -159,16 +167,17 @@ clip () {
 
   printf "\n"
   shift
-  while [ $timeout -gt 0 ] ; do
-    printf "\r\033[KPassword on clipboard! Clearing in %.d" $((timeout--))
+  while [ $cb_timeout -gt 0 ] ; do
+    printf "\r\033[KPassword on clipboard! Clearing in %.d" $((cb_timeout--))
     sleep 1
   done
 
+  printf "\n"
   printf "" | ${copy}
 }
 
 new_entry () {
-  # Prompt for new username and/or password.
+  # Prompt for username and password.
 
   username=""
   while [[ -z "${username}" ]] ; do
@@ -183,7 +192,9 @@ new_entry () {
   fi
 
   printf "\n"
-  if [[ -z "${password}" ]] ; then userpass=$(gen_pass "$@") ; fi
+  if [[ -z "${password}" ]] ; then
+    userpass=$(gen_pass "$@")
+  fi
 }
 
 print_help () {
@@ -207,7 +218,7 @@ print_help () {
     * Copy the password for 'userName' to clipboard:
         ./pwd.sh r userName
 
-    * List stored passwords and copy a previous version:
+    * List stored passwords and copy a specific version:
         ./pwd.sh l
         ./pwd.sh r userName@1574723625
 
@@ -234,7 +245,7 @@ action=""
 if [[ -n "${1+x}" ]] ; then action="${1}" ; fi
 
 while [[ -z "${action}" ]] ; do
-  read -n 1 -p "
+  read -r -n 1 -p "
   Read or Write (or Help for more options): " action
   printf "\n"
 done
@@ -252,8 +263,14 @@ elif [[ "${action}" =~ ^([wW])$ ]] ; then
   new_entry "$@"
   write_pass
 
+  if [[ "${daily_backup}" = "true" ]] ; then
+    if [[ ! -f ${backuptar} ]] ; then
+      backup
+    fi
+  fi
+
 else read_pass "$@" ; fi
 
 chmod -R 0400 "${safeix}" "${safedir}" 2>/dev/null
 
-tput setaf 2 2 2 ; printf "\nDone\n" ; tput sgr0
+tput setaf 2 ; printf "\nDone\n" ; tput sgr0
