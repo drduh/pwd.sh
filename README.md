@@ -14,7 +14,6 @@ Clone the repository:
 
 ```console
 git clone https://github.com/drduh/pwd.sh
-
 ```
 
 Or download the script directly:
