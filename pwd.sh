@@ -1,33 +1,44 @@
 #!/usr/bin/env bash
 # https://github.com/drduh/pwd.sh/blob/master/pwd.sh
+#set -x  # uncomment to debug
 set -o errtrace
 set -o nounset
 set -o pipefail
-#set -x  # uncomment to debug
 
 umask 077
 
-cb_timeout=10         # seconds to keep password on clipboard
+now="$(date +%s)"
+today="$(date +%F)"
+
+clip_timeout=10       # seconds to keep password on clipboard
 daily_backup="false"  # if true, create daily archive on write
 pass_copy="false"     # if true, keep password on clipboard before write
 pass_len=14           # default password length
-pass_chars="[:alnum:]!@#$%^&*();:+="
+pass_chars="[:alnum:]!?@#$%^&*();:+="
 
 gpgconf="${HOME}/.gnupg/gpg.conf"
-backuptar="${PWDSH_BACKUP:=pwd.$(hostname).$(date +%F).tar}"
+backuptar="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
 safeix="${PWDSH_INDEX:=pwd.index}"
 safedir="${PWDSH_SAFE:=safe}"
 
-now="$(date +%s)"
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
 script="$(basename "${BASH_SOURCE}")"
 
-fail () {
-  # Print an error message and exit.
+comment=""
+#comment="${script} ${now}"  # include comment in enc. files
 
-  tput setaf 1 ; printf "\nError: %s\n" "${1}" ; tput sgr0
+fail () {
+  # Print an error in red and exit.
+
+  tput setaf 1 ; printf "\nERROR: %s\n" "${1}" ; tput sgr0
   exit 1
+}
+
+warn () {
+  # Print a warning in yellow.
+
+  tput setaf 3 ; printf "\nWARNING: %s\n" "${1}" ; tput sgr0
 }
 
 get_pass () {
@@ -65,6 +76,7 @@ encrypt () {
   # Encrypt with GPG.
 
   ${gpg} --armor --batch \
+    --comment "${comment}" \
     --symmetric --yes --passphrase-fd 3 --no-symkey-cache \
     --output "${2}" "${3}" 3< <(printf '%s\n' "${1}") 2>/dev/null
 }
@@ -86,8 +98,8 @@ read_pass () {
   printf "\n"
 
   spath=$(decrypt "${password}" "${safeix}" | \
-    grep -F "${username}" | tail -n1 | cut -d : -f2) || \
-      fail "Failed to decrypt ${safeix}"
+    grep -F "${username}" | tail -1 | cut -d : -f2) || \
+      fail "Secret not available"
 
   clip <(decrypt "${password}" "${spath}") || \
     fail "Failed to decrypt ${spath}"
@@ -107,7 +119,7 @@ gen_pass () {
 }
 
 write_pass () {
-  # Write a password and update index file.
+  # Write a password and update the index.
 
   password=""
   while [[ -z "${password}" ]] ; do get_pass "
@@ -151,29 +163,33 @@ backup () {
   # Archive index, safe and configuration.
 
   if [[ -f "${safeix}" && -d "${safedir}" ]] ; then
-    cp "${gpgconf}" "gpg.conf.${now}"
-    tar --create --file "${backuptar}" \
-      "${safeix}" "${safedir}" "gpg.conf.${now}" "${script}"
-    rm "gpg.conf.${now}"
+    cp "${gpgconf}" "gpg.conf.${today}"
+    tar cf "${backuptar}" \
+      "${safeix}" "${safedir}" "gpg.conf.${today}" "${script}" && \
+        printf "\nArchived %s\n" "${backuptar}" && \
+          rm -f "gpg.conf.${today}"
   else fail "Nothing to archive" ; fi
-
-  printf "\nArchived %s\n" "${backuptar}"
 }
 
 clip () {
-  # Use clipboard and clear after timeout.
+  # Use clipboard or stdout and clear after timeout.
 
-  ${copy} < "${1}"
+  alias action="printf '' | ${copy}"
+  if [[ "${clip_dest}" = "screen" ]] ; then
+    printf '\n%s\n' $(cat "${1}")
+    alias action="clear"
+  else ${copy} < "${1}" ; fi
 
   printf "\n"
   shift
-  while [ $cb_timeout -gt 0 ] ; do
-    printf "\r\033[KPassword on clipboard! Clearing in %.d" $((cb_timeout--))
+  while [ ${clip_timeout} -gt 0 ] ; do
+    printf "\r\033[KPassword on %s! Clearing in %.d" \
+      "${clip_dest}" "$((clip_timeout--))"
     sleep 1
   done
 
   printf "\n"
-  printf "" | ${copy}
+  ${BASH_ALIASES[action]}
 }
 
 new_entry () {
@@ -229,11 +245,16 @@ print_help () {
         tar xvf pwd*tar"""
 }
 
-if [[ -z ${gpg} && ! -x ${gpg} ]] ; then fail "GnuPG is not available" ; fi
+if [[ -z "${gpg}" && ! -x "${gpg}" ]] ; then fail "GnuPG is not available" ; fi
 
-if [[ -z ${copy} && ! -x ${copy} ]] ; then fail "Clipboard is not available" ; fi
+if [[ ! -f "${gpgconf}" ]] ; then fail "GnuPG config is not available" ; fi
 
-if [[ ! -f ${gpgconf} ]] ; then fail "GnuPG config is not available" ; fi
+if [[ -z ${copy} && ! -x ${copy} ]]
+  then warn "Clipboard not available, passwords will print to screen"
+    clip_dest="screen"
+  else
+    clip_dest="clipboard"
+fi
 
 if [[ ! -d "${safedir}" ]] ; then mkdir -p "${safedir}" ; fi
 
