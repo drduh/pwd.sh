@@ -1,26 +1,22 @@
-pwd.sh is a Bash shell script to manage passwords and other secrets.
+pwd.sh is a Bash shell script to manage passwords and other text-based secrets.
 
 It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decrypt plaintext files.
 
-[drduh/Purse](https://github.com/drduh/Purse) is a fork which uses public key authentication instead of a master password and can integrate with YubiKey.
+Each password is encrypted as a unique, randomly-named file in the "safe" directory. An encrypted index is used to map usernames to the respective password file. Both the index and password files can also be decrypted directly with GnuPG without this script.
 
-# Release notes
+# Install
 
-See [Releases](https://github.com/drduh/pwd.sh/releases)
-
-# Use
-
-Clone the repository:
+For the latest version, clone the repository or download the script directly:
 
 ```console
 git clone https://github.com/drduh/pwd.sh
-```
 
-Or download the script directly:
-
-```console
 wget https://raw.githubusercontent.com/drduh/pwd.sh/master/pwd.sh
 ```
+
+Versioned [Releases](https://github.com/drduh/pwd.sh/releases) are also available.
+
+# Use
 
 Run the script interactively using `./pwd.sh` or symlink to a directory in `PATH`:
 
@@ -65,3 +61,5 @@ tar xvf pwd*tar
 ```
 
 See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional configuration options.
+
+Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a master password.
