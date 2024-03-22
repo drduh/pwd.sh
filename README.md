@@ -20,11 +20,11 @@ Versioned [Releases](https://github.com/drduh/pwd.sh/releases) are also availabl
 
 Run the script interactively using `./pwd.sh` or symlink to a directory in `PATH`:
 
-* Type `w` to write a password
-* Type `r` to read a password
-* Type `l` to list passwords
-* Type `b` to create an archive for backup
-* Type `h` to print the help text
+- `w` to write a password
+- `r` to read a password
+- `l` to list passwords
+- `b` to create an archive for backup
+- `h` to print the help text
 
 Options can also be passed on the command line.
 
@@ -60,6 +60,16 @@ Restore an archive from backup:
 tar xvf pwd*tar
 ```
 
-See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional configuration options.
+Several customizable parameters are also available, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
+
+- `PWDSH_TIME`: seconds to keep password on clipboard (default: 10)
+- `PWDSH_DAILY`: create daily archive on write (default: false)
+- `PWDSH_COPY`: keep password on clipboard before write (default: false)
+- `PWDSH_LEN`: default password length (default: 14)
+- `PWDSH_SAFE`: safe directory name (default: safe)
+- `PWDSH_INDEX`: index file name (default: pwd.index)
+- `PWDSH_BACKUP`: backup file name (default: pwd.hostname.today.tar)
+
+See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GnuPG options.
 
 Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a master password.
