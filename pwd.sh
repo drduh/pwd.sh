@@ -4,29 +4,26 @@
 set -o errtrace
 set -o nounset
 set -o pipefail
-
 umask 077
 
 now="$(date +%s)"
 today="$(date +%F)"
-
-clip_timeout=10       # seconds to keep password on clipboard
-daily_backup="false"  # if true, create daily archive on write
-pass_copy="false"     # if true, keep password on clipboard before write
-pass_len=14           # default password length
-pass_chars="[:alnum:]!?@#$%^&*();:+="
-
-gpgconf="${HOME}/.gnupg/gpg.conf"
-backuptar="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
-safeix="${PWDSH_INDEX:=pwd.index}"
-safedir="${PWDSH_SAFE:=safe}"
-
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
+gpgconf="${HOME}/.gnupg/gpg.conf"
+pass_chars="[:alnum:]!?@#$%^&*();:+="
 script="$(basename "${BASH_SOURCE}")"
 
+clip_dest="clipboard"                 # set to 'screen' to print w/o clipboard
+clip_timeout="${PWDSH_TIME:=10}"      # seconds to keep password on clipboard
+daily_backup="${PWDSH_DAILY:=false}"  # create daily archive on write
+pass_copy="${PWDSH_COPY:=false}"      # keep password on clipboard before write
+pass_len="${PWDSH_LEN:=14}"           # default password length
+safe_dir="${PWDSH_SAFE:=safe}"        # safe directory name
+safe_ix="${PWDSH_INDEX:=pwd.index}"   # index file name
+safe_backup="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
 comment=""
-#comment="${script} ${now}"  # include comment in enc. files
+#comment="${script} ${now}"  # include timestamp in enc. files
 
 fail () {
   # Print an error in red and exit.
@@ -84,7 +81,7 @@ encrypt () {
 read_pass () {
   # Read a password from safe.
 
-  if [[ ! -s ${safeix} ]] ; then fail "${safeix} not found" ; fi
+  if [[ ! -s ${safe_ix} ]] ; then fail "${safe_ix} not found" ; fi
 
   username=""
   while [[ -z "${username}" ]] ; do
@@ -94,10 +91,10 @@ read_pass () {
   done
 
   while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safeix}: " ; done
+  Password to unlock ${safe_ix}: " ; done
   printf "\n"
 
-  spath=$(decrypt "${password}" "${safeix}" | \
+  spath=$(decrypt "${password}" "${safe_ix}" | \
     grep -F "${username}" | tail -1 | cut -d : -f2) || \
       fail "Secret not available"
 
@@ -106,7 +103,7 @@ read_pass () {
 }
 
 gen_pass () {
-  # Generate a password using GPG.
+  # Generate a password from urandom.
 
   if [[ -z "${3+x}" ]] ; then read -r -p "
   Password length (default: ${pass_len}): " length
@@ -123,50 +120,50 @@ write_pass () {
 
   password=""
   while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safeix}: " ; done
+  Password to unlock ${safe_ix}: " ; done
   printf "\n"
 
   if [[ "${pass_copy}" = "true" ]] ; then
     clip <(printf '%s' "${userpass}")
   fi
 
-  fpath="$(LC_LANG=C tr -dc '[:lower:]' < /dev/urandom | fold -w10 | head -1)"
-  spath="${safedir}/${fpath}"
+  spath="${safe_dir}/$(LC_LANG=C \
+    tr -dc "[:lower:]" < /dev/urandom | fold -w10 | head -1)"
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
       fail "Failed to put ${spath}"
   userpass=""
 
-  ( if [[ -f "${safeix}" ]] ; then
-      decrypt "${password}" "${safeix}" || return ; fi
+  ( if [[ -f "${safe_ix}" ]] ; then
+      decrypt "${password}" "${safe_ix}" || return ; fi
     printf "%s@%s:%s\n" "${username}" "${now}" "${spath}") | \
-    encrypt "${password}" "${safeix}.${now}" - || \
-      fail "Failed to put ${safeix}.${now}"
+    encrypt "${password}" "${safe_ix}.${now}" - || \
+      fail "Failed to put ${safe_ix}.${now}"
 
-  mv "${safeix}.${now}" "${safeix}"
+  mv "${safe_ix}.${now}" "${safe_ix}"
 }
 
 list_entry () {
   # Decrypt the index to list entries.
 
-  if [[ ! -s ${safeix} ]] ; then fail "${safeix} not found" ; fi
+  if [[ ! -s ${safe_ix} ]] ; then fail "${safe_ix} not found" ; fi
 
   while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safeix}: " ; done
+  Password to unlock ${safe_ix}: " ; done
   printf "\n\n"
 
-  decrypt "${password}" "${safeix}" || \
+  decrypt "${password}" "${safe_ix}" || \
     fail "Decryption failed"
 }
 
 backup () {
   # Archive index, safe and configuration.
 
-  if [[ -f "${safeix}" && -d "${safedir}" ]] ; then
+  if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
     cp "${gpgconf}" "gpg.conf.${today}"
-    tar cf "${backuptar}" \
-      "${safeix}" "${safedir}" "gpg.conf.${today}" "${script}" && \
-        printf "\nArchived %s\n" "${backuptar}" && \
+    tar cf "${safe_backup}" \
+      "${safe_ix}" "${safe_dir}" "gpg.conf.${today}" "${script}" && \
+        printf "\nArchived %s\n" "${safe_backup}" && \
           rm -f "gpg.conf.${today}"
   else fail "Nothing to archive" ; fi
 }
@@ -174,22 +171,21 @@ backup () {
 clip () {
   # Use clipboard or stdout and clear after timeout.
 
-  alias action="printf '' | ${copy}"
   if [[ "${clip_dest}" = "screen" ]] ; then
-    printf '\n%s\n' $(cat "${1}")
-    alias action="clear"
+    printf '\n%s\n' "$(cat ${1})"
   else ${copy} < "${1}" ; fi
 
   printf "\n"
   shift
-  while [ ${clip_timeout} -gt 0 ] ; do
-    printf "\r\033[KPassword on %s! Clearing in %.d" \
+  while [ "${clip_timeout}" -gt 0 ] ; do
+    printf "\r\033[K  Password on %s! Clearing in %.d" \
       "${clip_dest}" "$((clip_timeout--))"
     sleep 1
   done
 
-  printf "\n"
-  ${BASH_ALIASES[action]}
+  if [[ "${clip_dest}" = "screen" ]] ; then
+    clear
+  else printf "\n" ; printf "" | ${copy} ; fi
 }
 
 new_entry () {
@@ -217,32 +213,36 @@ print_help () {
   # Print help text.
 
   printf """
-  pwd.sh is a Bash shell script to manage passwords with GnuPG symmetric encryption.
+  pwd.sh is a Bash shell script to manage passwords and other text-based secrets.
 
-  pwd.sh can be used interactively or by passing one of the following options:
+  It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decrypt plaintext files.
+
+  Each password is encrypted as a unique, randomly-named file in the 'safe' directory. An encrypted index is used to map usernames to the respective password file. Both the index and password files can also be decrypted directly with GnuPG without this script.
+
+  Run the script interactively using ./pwd.sh or symlink to a directory in PATH:
 
     * 'w' to write a password
     * 'r' to read a password
     * 'l' to list passwords
     * 'b' to create an archive for backup
 
-  Example usage:
+  Options can also be passed on the command line.
 
-    * Generate a 30 character password for 'userName':
-        ./pwd.sh w userName 30
+  * Create a 20-character password for userName:
+    ./pwd.sh w userName 20
 
-    * Copy the password for 'userName' to clipboard:
-        ./pwd.sh r userName
+  * Read password for userName:
+    ./pwd.sh r userName
 
-    * List stored passwords and copy a specific version:
-        ./pwd.sh l
-        ./pwd.sh r userName@1574723625
+  * Passwords are stored with a timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
+    ./pwd.sh l
+    ./pwd.sh r userName@1574723625
 
-    * Create an archive for backup:
-        ./pwd.sh b
+  * Create an archive for backup:
+    ./pwd.sh b
 
-    * Restore an archive from backup:
-        tar xvf pwd*tar"""
+  * Restore an archive from backup:
+    tar xvf pwd*tar"""
 }
 
 if [[ -z "${gpg}" && ! -x "${gpg}" ]] ; then fail "GnuPG is not available" ; fi
@@ -252,14 +252,12 @@ if [[ ! -f "${gpgconf}" ]] ; then fail "GnuPG config is not available" ; fi
 if [[ -z ${copy} && ! -x ${copy} ]]
   then warn "Clipboard not available, passwords will print to screen"
     clip_dest="screen"
-  else
-    clip_dest="clipboard"
 fi
 
-if [[ ! -d "${safedir}" ]] ; then mkdir -p "${safedir}" ; fi
+if [[ ! -d "${safe_dir}" ]] ; then mkdir -p "${safe_dir}" ; fi
 
-chmod -R 0600 "${safeix}"  2>/dev/null
-chmod -R 0700 "${safedir}" 2>/dev/null
+chmod -R 0600 "${safe_ix}"  2>/dev/null
+chmod -R 0700 "${safe_dir}" 2>/dev/null
 
 password=""
 action=""
@@ -285,13 +283,13 @@ elif [[ "${action}" =~ ^([wW])$ ]] ; then
   write_pass
 
   if [[ "${daily_backup}" = "true" ]] ; then
-    if [[ ! -f ${backuptar} ]] ; then
+    if [[ ! -f ${safe_backup} ]] ; then
       backup
     fi
   fi
 
 else read_pass "$@" ; fi
 
-chmod -R 0400 "${safeix}" "${safedir}" 2>/dev/null
+chmod -R 0400 "${safe_ix}" "${safe_dir}" 2>/dev/null
 
 tput setaf 2 ; printf "\nDone\n" ; tput sgr0
