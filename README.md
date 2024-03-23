@@ -60,17 +60,21 @@ Restore an archive from backup:
 tar xvf pwd*tar
 ```
 
+# Configure
+
 Several customizable parameters are also available as environment variables, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
 
-- `PWDSH_TIME`: seconds to keep password on clipboard (default: `10`)
-- `PWDSH_COPY`: keep password on clipboard before write (default: `unset`)
-- `PWDSH_DAILY`: create daily archive on write (default: `unset`)
-- `PWDSH_LEN`: default password length (default: `14`)
-- `PWDSH_COMMENT`: *unencrypted* comment to include in index and safe files (default: `unset`)
-- `PWDSH_DEST`: password output destination, can be `clipboard` or `screen` (default: `clipboard`)
-- `PWDSH_SAFE`: safe directory name (default: `safe`)
-- `PWDSH_INDEX`: index file name (default: `pwd.index`)
-- `PWDSH_BACKUP`: backup file name (default: `pwd.$hostname.$today.tar`)
+Variable | Description | Default | Values
+-|-|-|-
+`PWDSH_TIME` | seconds to keep password on clipboard | `10` | any valid integer
+`PWDSH_COPY` | keep password on clipboard before write | unset | `1` or `true` to enable
+`PWDSH_DAILY` | create daily backup archive on write | unset | `1` or `true` to enable
+`PWDSH_LEN` | generated password length | `14` | any valid integer
+`PWDSH_COMMENT` | **unencrypted** comment to include in index and safe files | unset | any valid string
+`PWDSH_DEST` | password output destination | `clipboard` | `clipboard` or `screen`
+`PWDSH_SAFE` | safe directory name | `safe` | any valid string
+`PWDSH_INDEX` | index file name | `pwd.index` | any valid string
+`PWDSH_BACKUP` | backup archive file name | `pwd.$hostname.$today.tar` | any valid string
 
 See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GnuPG options.
 
