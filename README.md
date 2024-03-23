@@ -40,7 +40,7 @@ Read password for `userName`:
 ./pwd.sh r userName
 ```
 
-Passwords are stored with a timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
+Passwords are stored with an epoch timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
 
 ```console
 ./pwd.sh l
@@ -60,15 +60,17 @@ Restore an archive from backup:
 tar xvf pwd*tar
 ```
 
-Several customizable parameters are also available, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
+Several customizable parameters are also available as environment variables, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
 
-- `PWDSH_TIME`: seconds to keep password on clipboard (default: 10)
-- `PWDSH_DAILY`: create daily archive on write (default: unset)
-- `PWDSH_COPY`: keep password on clipboard before write (default: unset)
-- `PWDSH_LEN`: default password length (default: 14)
-- `PWDSH_SAFE`: safe directory name (default: safe)
-- `PWDSH_INDEX`: index file name (default: pwd.index)
-- `PWDSH_BACKUP`: backup file name (default: pwd.hostname.today.tar)
+- `PWDSH_TIME`: seconds to keep password on clipboard (default: `10`)
+- `PWDSH_COPY`: keep password on clipboard before write (default: `unset`)
+- `PWDSH_DAILY`: create daily archive on write (default: `unset`)
+- `PWDSH_LEN`: default password length (default: `14`)
+- `PWDSH_COMMENT`: *unencrypted* comment to include in index and safe files (default: `unset`)
+- `PWDSH_DEST`: password output destination, can be `clipboard` or `screen` (default: `clipboard`)
+- `PWDSH_SAFE`: safe directory name (default: `safe`)
+- `PWDSH_INDEX`: index file name (default: `pwd.index`)
+- `PWDSH_BACKUP`: backup file name (default: `pwd.$hostname.$today.tar`)
 
 See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GnuPG options.
 

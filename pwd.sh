@@ -11,20 +11,18 @@ now="$(date +%s)"
 today="$(date +%F)"
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
-gpgconf="${HOME}/.gnupg/gpg.conf"
+gpg_conf="${HOME}/.gnupg/gpg.conf"
 pass_chars="[:alnum:]!?@#$%^&*();:+="
-script="$(basename "${BASH_SOURCE}")"
 
-clip_dest="clipboard"                 # set to 'screen' to print w/o clipboard
+clip_dest="${PWDSH_DEST:=clipboard}"  # set to 'screen' to print to stdout
 clip_timeout="${PWDSH_TIME:=10}"      # seconds to keep password on clipboard
+comment="${PWDSH_COMMENT:=}"          # include *unencrypted* comment in files
 daily_backup="${PWDSH_DAILY:=}"       # create daily archive on write
 pass_copy="${PWDSH_COPY:=}"           # keep password on clipboard before write
 pass_len="${PWDSH_LEN:=14}"           # default password length
 safe_dir="${PWDSH_SAFE:=safe}"        # safe directory name
 safe_ix="${PWDSH_INDEX:=pwd.index}"   # index file name
 safe_backup="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
-comment=""
-#comment="${script} ${now}"  # include timestamp in enc. files
 
 fail () {
   # Print an error in red and exit.
@@ -121,21 +119,20 @@ write_pass () {
 
   get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
 
-  if [[ -z "${pass_copy}" ]] ; then
+  if [[ -n "${pass_copy}" ]] ; then
     clip <(printf '%s' "${userpass}")
   fi
 
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
-      fail "Failed to put ${spath}"
+      fail "Failed saving ${spath}"
 
   ( if [[ -f "${safe_ix}" ]] ; then
       decrypt "${password}" "${safe_ix}" || return ; fi
     printf "%s@%s:%s\n" "${username}" "${now}" "${spath}") | \
-    encrypt "${password}" "${safe_ix}.${now}" - || \
-      fail "Failed to put ${safe_ix}.${now}"
-
-  mv "${safe_ix}.${now}" "${safe_ix}"
+    encrypt "${password}" "${safe_ix}.${now}" - && \
+      mv "${safe_ix}.${now}" "${safe_ix}" || \
+        fail "Failed saving ${safe_ix}.${now}"
 }
 
 list_entry () {
@@ -151,11 +148,9 @@ backup () {
   # Archive index, safe and configuration.
 
   if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
-    cp "${gpgconf}" "gpg.conf.${today}"
-    tar cf "${safe_backup}" \
-      "${safe_ix}" "${safe_dir}" "gpg.conf.${today}" "${script}" && \
-        printf "\nArchived %s\n" "${safe_backup}" && \
-          rm -f "gpg.conf.${today}"
+    tar cf "${safe_backup}" "${safe_ix}" "${safe_dir}" \
+      "${BASH_SOURCE}" "${gpg_conf}" > /dev/null && \
+        printf "\nArchived %s\n" "${safe_backup}"
   else fail "Nothing to archive" ; fi
 }
 
@@ -222,7 +217,7 @@ print_help () {
   * Read password for userName:
     ./pwd.sh r userName
 
-  * Passwords are stored with a timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
+  * Passwords are stored with an epoch timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
     ./pwd.sh l
     ./pwd.sh r userName@1574723625
 
@@ -235,16 +230,16 @@ print_help () {
 
 if [[ -z "${gpg}" && ! -x "${gpg}" ]] ; then fail "GnuPG is not available" ; fi
 
-if [[ ! -f "${gpgconf}" ]] ; then fail "GnuPG config is not available" ; fi
-
-if [[ -z ${copy} && ! -x ${copy} ]]
-  then warn "Clipboard not available, passwords will print to screen"
-    clip_dest="screen"
-fi
+if [[ ! -f "${gpg_conf}" ]] ; then fail "GnuPG config is not available" ; fi
 
 if [[ ! -d "${safe_dir}" ]] ; then mkdir -p "${safe_dir}" ; fi
 
 chmod -R 0700 "${safe_ix}" "${safe_dir}" 2>/dev/null
+
+if [[ -z ${copy} && ! -x ${copy} ]] ; then
+  warn "Clipboard not available, passwords will print to screen/stdout!"
+  clip_dest="screen"
+fi
 
 username=""
 action=""
@@ -261,7 +256,7 @@ if [[ "${action}" =~ ^([rR])$ ]] ; then
 elif [[ "${action}" =~ ^([wW])$ ]] ; then
   new_entry "$@"
   write_pass
-  if [[ -z "${daily_backup}" && ! -f ${safe_backup} ]]
+  if [[ -n "${daily_backup}" && ! -f ${safe_backup} ]]
     then backup
   fi
 elif [[ "${action}" =~ ^([lL])$ ]] ; then list_entry
