@@ -24,6 +24,15 @@ safe_dir="${PWDSH_SAFE:=safe}"        # safe directory name
 safe_ix="${PWDSH_INDEX:=pwd.index}"   # index file name
 safe_backup="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
 
+trap cleanup EXIT INT TERM
+cleanup () {
+  # "Lock" safe on trapped exits.
+
+  ret=$?
+  chmod -R 0000 "${safe_ix}" "${safe_dir}" 2>/dev/null
+  exit ${ret}
+}
+
 fail () {
   # Print an error in red and exit.
 
@@ -166,13 +175,14 @@ clip () {
   printf "\n"
   while [ "${clip_timeout}" -gt 0 ] ; do
     printf "\r\033[K  Password on %s! Clearing in %.d" \
-      "${clip_dest}" "$((clip_timeout--))"
-    sleep 1
+      "${clip_dest}" "$((clip_timeout--))" ; sleep 1
   done
+  printf "\r\033[K  Clearing password from %s ..." "${clip_dest}"
 
   if [[ "${clip_dest}" = "screen" ]] ; then
     clear
   else printf "\n" ; printf "" | ${copy} ; fi
+
 }
 
 new_entry () {
@@ -249,8 +259,7 @@ action=""
 
 if [[ -n "${1+x}" ]] ; then action="${1}" ; fi
 
-while [[ -z "${action}" ]] ; do
-  read -r -n 1 -p "
+while [[ -z "${action}" ]] ; do read -r -n 1 -p "
   Read or Write (or Help for more options): " action
   printf "\n"
 done
@@ -266,7 +275,5 @@ elif [[ "${action}" =~ ^([wW])$ ]] ; then
 elif [[ "${action}" =~ ^([lL])$ ]] ; then list_entry
 elif [[ "${action}" =~ ^([bB])$ ]] ; then backup
 else print_help ; fi
-
-chmod -R 0000 "${safe_ix}" "${safe_dir}" 2>/dev/null
 
 tput setaf 2 ; printf "\nDone\n" ; tput sgr0
