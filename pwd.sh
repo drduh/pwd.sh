@@ -15,11 +15,11 @@ gpg_conf="${HOME}/.gnupg/gpg.conf"
 pass_chars="[:alnum:]!?@#$%^&*();:+="
 
 clip_dest="${PWDSH_DEST:=clipboard}"  # set to 'screen' to print to stdout
-clip_timeout="${PWDSH_TIME:=10}"      # seconds to keep password on clipboard
-comment="${PWDSH_COMMENT:=}"          # include *unencrypted* comment in files
-daily_backup="${PWDSH_DAILY:=}"       # create daily archive on write
-pass_copy="${PWDSH_COPY:=}"           # keep password on clipboard before write
-pass_len="${PWDSH_LEN:=14}"           # default password length
+clip_timeout="${PWDSH_TIME:=10}"      # seconds to clear clipboard/screen
+comment="${PWDSH_COMMENT:=}"          # *unencrypted* comment in files
+daily_backup="${PWDSH_DAILY:=}"       # daily backup archive on write
+pass_copy="${PWDSH_COPY:=}"           # copy password before write
+pass_len="${PWDSH_LEN:=14}"           # default generated password length
 safe_dir="${PWDSH_SAFE:=safe}"        # safe directory name
 safe_ix="${PWDSH_INDEX:=pwd.index}"   # index file name
 safe_backup="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
@@ -40,7 +40,6 @@ warn () {
 get_pass () {
   # Prompt for a password.
 
-  password=""
   prompt="  ${1}"
   printf "\n"
 
@@ -153,6 +152,7 @@ backup () {
     tar cf "${safe_backup}" "${safe_ix}" "${safe_dir}" \
       "${BASH_SOURCE}" "gpg.conf.${today}" && \
         printf "\nArchived %s\n" "${safe_backup}"
+    rm -f "gpg.conf.${today}"
   else fail "Nothing to archive" ; fi
 }
 
@@ -244,7 +244,9 @@ if [[ -z ${copy} && ! -x ${copy} ]] ; then
 fi
 
 username=""
+password=""
 action=""
+
 if [[ -n "${1+x}" ]] ; then action="${1}" ; fi
 
 while [[ -z "${action}" ]] ; do
