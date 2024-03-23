@@ -63,8 +63,8 @@ tar xvf pwd*tar
 Several customizable parameters are also available, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
 
 - `PWDSH_TIME`: seconds to keep password on clipboard (default: 10)
-- `PWDSH_DAILY`: create daily archive on write (default: false)
-- `PWDSH_COPY`: keep password on clipboard before write (default: false)
+- `PWDSH_DAILY`: create daily archive on write (default: unset)
+- `PWDSH_COPY`: keep password on clipboard before write (default: unset)
 - `PWDSH_LEN`: default password length (default: 14)
 - `PWDSH_SAFE`: safe directory name (default: safe)
 - `PWDSH_INDEX`: index file name (default: pwd.index)
