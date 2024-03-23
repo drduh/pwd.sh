@@ -62,16 +62,16 @@ tar xvf pwd*tar
 
 # Configure
 
-Several customizable parameters are also available as environment variables, which can be set in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
+Several customizable options and features are also available, and can be configured with environment variables, for example in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
 
 Variable | Description | Default | Values
 -|-|-|-
-`PWDSH_TIME` | seconds to keep password on clipboard | `10` | any valid integer
-`PWDSH_COPY` | keep password on clipboard before write | unset | `1` or `true` to enable
-`PWDSH_DAILY` | create daily backup archive on write | unset | `1` or `true` to enable
-`PWDSH_LEN` | generated password length | `14` | any valid integer
+`PWDSH_TIME` | seconds to clear password from clipboard/screen | `10` | any valid integer
+`PWDSH_LEN` | default generated password length | `14` | any valid integer
+`PWDSH_COPY` | copy password to clipboard before write | unset (disabled) | `1` or `true` to enable
+`PWDSH_DAILY` | create daily backup archive on write | unset (disabled) | `1` or `true` to enable
 `PWDSH_COMMENT` | **unencrypted** comment to include in index and safe files | unset | any valid string
-`PWDSH_DEST` | password output destination | `clipboard` | `clipboard` or `screen`
+`PWDSH_DEST` | password output destination, will set to `screen` without clipboard | `clipboard` | `clipboard` or `screen`
 `PWDSH_SAFE` | safe directory name | `safe` | any valid string
 `PWDSH_INDEX` | index file name | `pwd.index` | any valid string
 `PWDSH_BACKUP` | backup archive file name | `pwd.$hostname.$today.tar` | any valid string

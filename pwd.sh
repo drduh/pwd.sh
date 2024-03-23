@@ -117,11 +117,11 @@ write_pass () {
   spath="${safe_dir}/$(tr -dc "[:lower:]" < /dev/urandom | \
     fold -w10 | head -1)"
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
-
   if [[ -n "${pass_copy}" ]] ; then
     clip <(printf '%s' "${userpass}")
   fi
+
+  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
 
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
@@ -141,15 +141,17 @@ list_entry () {
   if [[ ! -s ${safe_ix} ]] ; then fail "${safe_ix} not found" ; fi
 
   get_pass "Password to unlock ${safe_ix}: " ; printf "\n\n"
-  decrypt "${password}" "${safe_ix}" || fail "Decryption failed"
+
+  decrypt "${password}" "${safe_ix}" || fail "${safe_ix} not available"
 }
 
 backup () {
   # Archive index, safe and configuration.
 
   if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
+    cp "${gpg_conf}" "gpg.conf.${today}"
     tar cf "${safe_backup}" "${safe_ix}" "${safe_dir}" \
-      "${BASH_SOURCE}" "${gpg_conf}" > /dev/null && \
+      "${BASH_SOURCE}" "gpg.conf.${today}" && \
         printf "\nArchived %s\n" "${safe_backup}"
   else fail "Nothing to archive" ; fi
 }
