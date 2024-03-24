@@ -5,25 +5,33 @@ set -o errtrace
 set -o nounset
 set -o pipefail
 umask 077
+export LC_ALL="C"
 
 now="$(date +%s)"
 today="$(date +%F)"
 copy="$(command -v xclip || command -v pbcopy)"
 gpg="$(command -v gpg || command -v gpg2)"
-gpgconf="${HOME}/.gnupg/gpg.conf"
+gpg_conf="${HOME}/.gnupg/gpg.conf"
 pass_chars="[:alnum:]!?@#$%^&*();:+="
-script="$(basename "${BASH_SOURCE}")"
 
-clip_dest="clipboard"                 # set to 'screen' to print w/o clipboard
-clip_timeout="${PWDSH_TIME:=10}"      # seconds to keep password on clipboard
-daily_backup="${PWDSH_DAILY:=false}"  # create daily archive on write
-pass_copy="${PWDSH_COPY:=false}"      # keep password on clipboard before write
-pass_len="${PWDSH_LEN:=14}"           # default password length
+clip_dest="${PWDSH_DEST:=clipboard}"  # set to 'screen' to print to stdout
+clip_timeout="${PWDSH_TIME:=10}"      # seconds to clear clipboard/screen
+comment="${PWDSH_COMMENT:=}"          # *unencrypted* comment in files
+daily_backup="${PWDSH_DAILY:=}"       # daily backup archive on write
+pass_copy="${PWDSH_COPY:=}"           # copy password before write
+pass_len="${PWDSH_LEN:=14}"           # default generated password length
 safe_dir="${PWDSH_SAFE:=safe}"        # safe directory name
 safe_ix="${PWDSH_INDEX:=pwd.index}"   # index file name
 safe_backup="${PWDSH_BACKUP:=pwd.$(hostname).${today}.tar}"
-comment=""
-#comment="${script} ${now}"  # include timestamp in enc. files
+
+trap cleanup EXIT INT TERM
+cleanup () {
+  # "Lock" safe on trapped exits.
+
+  ret=$?
+  chmod -R 0000 "${safe_ix}" "${safe_dir}" 2>/dev/null
+  exit ${ret}
+}
 
 fail () {
   # Print an error in red and exit.
@@ -41,8 +49,8 @@ warn () {
 get_pass () {
   # Prompt for a password.
 
-  password=""
-  prompt="${1}"
+  prompt="  ${1}"
+  printf "\n"
 
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then
@@ -72,9 +80,8 @@ decrypt () {
 encrypt () {
   # Encrypt with GPG.
 
-  ${gpg} --armor --batch \
-    --comment "${comment}" \
-    --symmetric --yes --passphrase-fd 3 --no-symkey-cache \
+  ${gpg} --armor --batch --comment "${comment}" \
+    --symmetric --yes --passphrase-fd 3 \
     --output "${2}" "${3}" 3< <(printf '%s\n' "${1}") 2>/dev/null
 }
 
@@ -83,16 +90,13 @@ read_pass () {
 
   if [[ ! -s ${safe_ix} ]] ; then fail "${safe_ix} not found" ; fi
 
-  username=""
   while [[ -z "${username}" ]] ; do
     if [[ -z "${2+x}" ]] ; then read -r -p "
   Username: " username
     else username="${2}" ; fi
   done
 
-  while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safe_ix}: " ; done
-  printf "\n"
+  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
 
   spath=$(decrypt "${password}" "${safe_ix}" | \
     grep -F "${username}" | tail -1 | cut -d : -f2) || \
@@ -111,36 +115,32 @@ gen_pass () {
 
   if [[ ${length} =~ ^[0-9]+$ ]] ; then pass_len=${length} ; fi
 
-  LC_LANG=C tr -dc "${pass_chars}" < /dev/urandom | \
+  tr -dc "${pass_chars}" < /dev/urandom | \
     fold -w "${pass_len}" | head -1
 }
 
 write_pass () {
   # Write a password and update the index.
 
-  password=""
-  while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safe_ix}: " ; done
-  printf "\n"
+  spath="${safe_dir}/$(tr -dc "[:lower:]" < /dev/urandom | \
+    fold -w10 | head -1)"
 
-  if [[ "${pass_copy}" = "true" ]] ; then
+  if [[ -n "${pass_copy}" ]] ; then
     clip <(printf '%s' "${userpass}")
   fi
 
-  spath="${safe_dir}/$(LC_LANG=C \
-    tr -dc "[:lower:]" < /dev/urandom | fold -w10 | head -1)"
+  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
+
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
-      fail "Failed to put ${spath}"
-  userpass=""
+      fail "Failed saving ${spath}"
 
   ( if [[ -f "${safe_ix}" ]] ; then
       decrypt "${password}" "${safe_ix}" || return ; fi
     printf "%s@%s:%s\n" "${username}" "${now}" "${spath}") | \
-    encrypt "${password}" "${safe_ix}.${now}" - || \
-      fail "Failed to put ${safe_ix}.${now}"
-
-  mv "${safe_ix}.${now}" "${safe_ix}"
+    encrypt "${password}" "${safe_ix}.${now}" - && \
+      mv "${safe_ix}.${now}" "${safe_ix}" || \
+        fail "Failed saving ${safe_ix}.${now}"
 }
 
 list_entry () {
@@ -148,23 +148,20 @@ list_entry () {
 
   if [[ ! -s ${safe_ix} ]] ; then fail "${safe_ix} not found" ; fi
 
-  while [[ -z "${password}" ]] ; do get_pass "
-  Password to unlock ${safe_ix}: " ; done
-  printf "\n\n"
+  get_pass "Password to unlock ${safe_ix}: " ; printf "\n\n"
 
-  decrypt "${password}" "${safe_ix}" || \
-    fail "Decryption failed"
+  decrypt "${password}" "${safe_ix}" || fail "${safe_ix} not available"
 }
 
 backup () {
   # Archive index, safe and configuration.
 
   if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
-    cp "${gpgconf}" "gpg.conf.${today}"
-    tar cf "${safe_backup}" \
-      "${safe_ix}" "${safe_dir}" "gpg.conf.${today}" "${script}" && \
-        printf "\nArchived %s\n" "${safe_backup}" && \
-          rm -f "gpg.conf.${today}"
+    cp "${gpg_conf}" "gpg.conf.${today}"
+    tar cf "${safe_backup}" "${safe_ix}" "${safe_dir}" \
+      "${BASH_SOURCE}" "gpg.conf.${today}" && \
+        printf "\nArchived %s\n" "${safe_backup}"
+    rm -f "gpg.conf.${today}"
   else fail "Nothing to archive" ; fi
 }
 
@@ -176,30 +173,29 @@ clip () {
   else ${copy} < "${1}" ; fi
 
   printf "\n"
-  shift
   while [ "${clip_timeout}" -gt 0 ] ; do
     printf "\r\033[K  Password on %s! Clearing in %.d" \
-      "${clip_dest}" "$((clip_timeout--))"
-    sleep 1
+      "${clip_dest}" "$((clip_timeout--))" ; sleep 1
   done
+  printf "\r\033[K  Clearing password from %s ..." "${clip_dest}"
 
   if [[ "${clip_dest}" = "screen" ]] ; then
     clear
   else printf "\n" ; printf "" | ${copy} ; fi
+
 }
 
 new_entry () {
   # Prompt for username and password.
 
-  username=""
   while [[ -z "${username}" ]] ; do
     if [[ -z "${2+x}" ]] ; then read -r -p "
   Username: " username
     else username="${2}" ; fi
   done
 
-  if [[ -z "${3+x}" ]] ; then get_pass "
-  Password for \"${username}\" (Enter to generate): "
+  if [[ -z "${3+x}" ]] ; then
+    get_pass "Password for \"${username}\" (Enter to generate): "
     userpass="${password}"
   fi
 
@@ -212,8 +208,7 @@ new_entry () {
 print_help () {
   # Print help text.
 
-  printf """
-  pwd.sh is a Bash shell script to manage passwords and other text-based secrets.
+  printf """\npwd.sh is a Bash shell script to manage passwords and other text-based secrets.
 
   It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decrypt plaintext files.
 
@@ -234,7 +229,7 @@ print_help () {
   * Read password for userName:
     ./pwd.sh r userName
 
-  * Passwords are stored with a timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
+  * Passwords are stored with an epoch timestamp for revision control. The most recent version is copied to clipboard on read. To list all passwords or read a specific version of a password:
     ./pwd.sh l
     ./pwd.sh r userName@1574723625
 
@@ -242,54 +237,43 @@ print_help () {
     ./pwd.sh b
 
   * Restore an archive from backup:
-    tar xvf pwd*tar"""
+    tar xvf pwd*tar\n"""
 }
 
 if [[ -z "${gpg}" && ! -x "${gpg}" ]] ; then fail "GnuPG is not available" ; fi
 
-if [[ ! -f "${gpgconf}" ]] ; then fail "GnuPG config is not available" ; fi
-
-if [[ -z ${copy} && ! -x ${copy} ]]
-  then warn "Clipboard not available, passwords will print to screen"
-    clip_dest="screen"
-fi
+if [[ ! -f "${gpg_conf}" ]] ; then fail "GnuPG config is not available" ; fi
 
 if [[ ! -d "${safe_dir}" ]] ; then mkdir -p "${safe_dir}" ; fi
 
-chmod -R 0600 "${safe_ix}"  2>/dev/null
-chmod -R 0700 "${safe_dir}" 2>/dev/null
+chmod -R 0700 "${safe_ix}" "${safe_dir}" 2>/dev/null
 
+if [[ -z ${copy} && ! -x ${copy} ]] ; then
+  warn "Clipboard not available, passwords will print to screen/stdout!"
+  clip_dest="screen"
+fi
+
+username=""
 password=""
 action=""
+
 if [[ -n "${1+x}" ]] ; then action="${1}" ; fi
 
-while [[ -z "${action}" ]] ; do
-  read -r -n 1 -p "
+while [[ -z "${action}" ]] ; do read -r -n 1 -p "
   Read or Write (or Help for more options): " action
   printf "\n"
 done
 
-if [[ "${action}" =~ ^([hH])$ ]] ; then
-  print_help
-
-elif [[ "${action}" =~ ^([bB])$ ]] ; then
-  backup
-
-elif [[ "${action}" =~ ^([lL])$ ]] ; then
-  list_entry
-
+if [[ "${action}" =~ ^([rR])$ ]] ; then
+  read_pass "$@"
 elif [[ "${action}" =~ ^([wW])$ ]] ; then
   new_entry "$@"
   write_pass
-
-  if [[ "${daily_backup}" = "true" ]] ; then
-    if [[ ! -f ${safe_backup} ]] ; then
-      backup
-    fi
+  if [[ -n "${daily_backup}" && ! -f ${safe_backup} ]]
+    then backup
   fi
-
-else read_pass "$@" ; fi
-
-chmod -R 0400 "${safe_ix}" "${safe_dir}" 2>/dev/null
+elif [[ "${action}" =~ ^([lL])$ ]] ; then list_entry
+elif [[ "${action}" =~ ^([bB])$ ]] ; then backup
+else print_help ; fi
 
 tput setaf 2 ; printf "\nDone\n" ; tput sgr0
