@@ -1,3 +1,4 @@
 pwd.*.tar
-pwd.index
+pwd.index*
+pwd.pepper
 safe/

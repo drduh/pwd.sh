@@ -1,8 +1,8 @@
 pwd.sh is a Bash shell script to manage passwords and other text-based secrets.
 
-It uses GnuPG to symmetrically (i.e., using a master password) encrypt and decrypt plaintext files.
+It uses GnuPG to symmetrically (i.e., using a passphrase) encrypt and decrypt plaintext files.
 
-Each password is encrypted as a unique, randomly-named file in the "safe" directory. An encrypted index is used to map usernames to the respective password file. Both the index and password files can also be decrypted directly with GnuPG without this script.
+Each password is encrypted individually as a randomly-named file in the "safe" directory. An encrypted index is used to map usernames to the respective password file. Both the index and password files can also be decrypted directly with GnuPG without this script.
 
 # Install
 
@@ -64,18 +64,29 @@ tar xvf pwd*tar
 
 Several customizable options and features are also available, and can be configured with environment variables, for example in the [shell rc](https://github.com/drduh/config/blob/master/zshrc) file:
 
-Variable | Description | Default | Values
+Variable | Description | Default | Available options
 -|-|-|-
+`PWDSH_COPY` | clipboard to use | `xclip` | `pbcopy` on macOS
+`PWDSH_COPY_ARGS` | arguments to pass to clipboard command | unset (disabled) | `-i -selection clipboard` to use primary (control-v) clipboard with xclip
 `PWDSH_TIME` | seconds to clear password from clipboard/screen | `10` | any valid integer
-`PWDSH_LEN` | default generated password length | `14` | any valid integer
+`PWDSH_LEN` | default password length | `14` | any valid integer
 `PWDSH_COPY` | copy password to clipboard before write | unset (disabled) | `1` or `true` to enable
 `PWDSH_DAILY` | create daily backup archive on write | unset (disabled) | `1` or `true` to enable
+`PWDSH_CHARS` | character set for passwords | `[:alnum:]!?@#$%^&*();:+=` | any valid characters
 `PWDSH_COMMENT` | **unencrypted** comment to include in index and safe files | unset | any valid string
 `PWDSH_DEST` | password output destination, will set to `screen` without clipboard | `clipboard` | `clipboard` or `screen`
+`PWDSH_ECHO` | character used to echo password input | `*` | any valid character
 `PWDSH_SAFE` | safe directory name | `safe` | any valid string
 `PWDSH_INDEX` | index file name | `pwd.index` | any valid string
 `PWDSH_BACKUP` | backup archive file name | `pwd.$hostname.$today.tar` | any valid string
+`PWDSH_PEPPER` | file containing "pepper" secret string, see [Detail 1](#Details#1) | unset (disabled) | any valid file path
 
 See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GnuPG options.
 
-Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a master password.
+Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a passphrase.
+
+# Details
+
+1. The ["pepper"](https://en.wikipedia.org/wiki/Pepper_(cryptography)) is an additional secret value which is generated and displayed once. When the optional `PWDSH_PEPPER` option is enabled, this value is appended to the main passphrase to increase its entropy by approximately 120 bits (24 characters from a set of 30). The pepper should be written down (can be transcribed with either [passphrase.html](https://github.com/drduh/YubiKey-Guide/blob/master/passphrase.html) or [passphrase.csv](https://raw.githubusercontent.com/drduh/YubiKey-Guide/master/passphrase.csv) template) and stored in a durable location for backup. It is the opinion of the author this feature allows the use of a more memorable, weaker main passphrase without compromising overall security, provided the pepper is backed up separately from the safe.
+
+	**Warning** The pepper file is **not** included in the backup archive - without it, the safe will not be accessible with the main passphrase alone! This feature is opt-in and the pepper has no effect unless it is explicitly enabled.
