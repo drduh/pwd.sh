@@ -79,7 +79,7 @@ Variable | Description | Default | Available options
 `PWDSH_SAFE` | safe directory name | `safe` | any valid string
 `PWDSH_INDEX` | index file name | `pwd.index` | any valid string
 `PWDSH_BACKUP` | backup archive file name | `pwd.$hostname.$today.tar` | any valid string
-`PWDSH_PEPPER` | file containing "pepper" secret string, see [Detail 1](#Details#1) | unset (disabled) | any valid file path
+`PWDSH_PEPPER` | file containing "pepper" value, see [Detail 1](#Details#1) | unset (disabled) | any valid file path
 
 See [config/gpg.conf](https://github.com/drduh/config/blob/master/gpg.conf) for additional GnuPG options.
 
@@ -87,6 +87,10 @@ Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates
 
 # Details
 
-1. The ["pepper"](https://en.wikipedia.org/wiki/Pepper_(cryptography)) is an additional secret value which is generated and displayed once. When the optional `PWDSH_PEPPER` option is enabled, this value is appended to the main passphrase to increase its entropy by approximately 120 bits (24 characters from a set of 30). The pepper should be written down (can be transcribed with either [passphrase.html](https://github.com/drduh/YubiKey-Guide/blob/master/passphrase.html) or [passphrase.csv](https://raw.githubusercontent.com/drduh/YubiKey-Guide/master/passphrase.csv) template) and stored in a durable location for backup. It is the opinion of the author this feature allows the use of a more memorable, weaker main passphrase without compromising overall security, provided the pepper is backed up separately from the safe.
+1. The ["pepper"](https://en.wikipedia.org/wiki/Pepper_(cryptography)) is an additional string appended to the main passphrase to improve its strength. When the `PWDSH_PEPPER` option is enabled, a secret value is generated and displayed once, then saved to the respective file.
 
-	**Warning** The pepper file is **not** included in the backup archive - without it, the safe will not be accessible with the main passphrase alone! This feature is opt-in and the pepper has no effect unless it is explicitly enabled.
+    The pepper should be written down (can be transcribed with either [passphrase.html](https://github.com/drduh/YubiKey-Guide/blob/master/passphrase.html) or [passphrase.csv](https://raw.githubusercontent.com/drduh/YubiKey-Guide/master/passphrase.csv) template) and stored in a durable location for backup.
+
+    It is the opinion of the author this feature allows the use of a more memorable, weaker main passphrase without compromising overall security, provided the pepper is backed up separately from the safe.
+
+    **Warning** The pepper file is **not** included in backup archives - without the pepper, the safe will **not** be accessible with the main passphrase alone! This feature is opt-in and the pepper has no effect unless explicitly enabled.

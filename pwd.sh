@@ -57,7 +57,7 @@ gen_pepper () {
   printf "%s" "$(tr -dc 'A-Z1-9' < /dev/urandom | \
     tr -d "1IOS5U" | fold -w 30 | sed "-es/./ /"{1..26..5} | \
     cut -c2- | tr " " "-" | head -1)" | \
-    tee "${pepper}" || fail "fail"
+    tee "${pepper}" || fail "Failed to create ${pepper}"
   printf "\n"
 }
 
