@@ -32,8 +32,7 @@ cleanup () {
   # "Lock" files on trapped exits.
 
   ret=$?
-  chmod -R 0000 \
-    "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
+  chmod -R 0000 "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
   exit ${ret}
 }
 
@@ -86,10 +85,7 @@ get_pass () {
 decrypt () {
   # Decrypt with GPG.
 
-  secret="${1}"
-  if [[ -f "${pepper}" ]] ; then secret+=".$(cat ${pepper})" ; fi
-
-  printf "%s" "${secret}" | \
+  printf "%s" "${1}${pep}" | \
     ${gpg} --armor --batch --no-symkey-cache \
     --decrypt --passphrase-fd 0 "${2}" 2>/dev/null
 }
@@ -97,13 +93,10 @@ decrypt () {
 encrypt () {
   # Encrypt with GPG.
 
-  secret="${1}"
-  if [[ -f "${pepper}" ]] ; then secret+=".$(cat ${pepper})" ; fi
-
   ${gpg} --armor --batch --comment "${comment}" \
     --symmetric --yes --passphrase-fd 3 \
     --output "${2}" "${3}" 3< \
-    <(printf "%s" "${secret}") 2>/dev/null
+    <(printf "%s" "${1}${pep}") 2>/dev/null
 }
 
 read_pass () {
@@ -117,7 +110,7 @@ read_pass () {
     else username="${2}" ; fi
   done
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
+  get_pass "Password to access ${safe_ix}: " ; printf "\n"
 
   spath=$(decrypt "${password}" "${safe_ix}" | \
     grep -F "${username}" | tail -1 | cut -d ":" -f2) || \
@@ -146,9 +139,9 @@ gen_user () {
   # Generate a username.
 
   printf "%s%s\n" \
-    "$(awk 'length > 4 && length < 8 {print(tolower($0))}' \
-    /usr/share/dict/words | tr -d "'" | sort | uniq | \
-    iconv -f utf8 -t ascii//TRANSLIT | sort -R | head -1)" \
+    "$(awk 'length > 2 && length < 12 {print(tolower($0))}' \
+    /usr/share/dict/words | grep -v "'" | sort -R | head -n2 | \
+    tr "\n" "_" | iconv -f utf-8 -t ascii//TRANSLIT)" \
     "$(tr -dc "[:digit:]" < /dev/urandom | fold -w 4 | head -1)"
 }
 
@@ -162,7 +155,7 @@ write_pass () {
     clip <(printf '%s' "${userpass}")
   fi
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
+  get_pass "Password to access ${safe_ix}: " ; printf "\n"
 
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
@@ -181,7 +174,7 @@ list_entry () {
 
   if [[ ! -s "${safe_ix}" ]] ; then fail "${safe_ix} not found" ; fi
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n\n"
+  get_pass "Password to access ${safe_ix}: " ; printf "\n\n"
 
   decrypt "${password}" "${safe_ix}" || fail "${safe_ix} not available"
 }
@@ -189,7 +182,7 @@ list_entry () {
 backup () {
   # Archive index, safe and configuration.
 
-  if [[ ! -f ${safe_backup} ]] ; then
+  if [[ ! -f "${safe_backup}" ]] ; then
     if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
       cp "${gpg_conf}" "gpg.conf.${today}"
       tar cf "${safe_backup}" "${safe_dir}" "${safe_ix}" \
@@ -205,7 +198,7 @@ clip () {
 
   if [[ "${clip_dest}" = "screen" ]] ; then
     printf '\n%s\n' "$(cat ${1})"
-  else ${copy} < "${1}" ; fi
+  else "${copy}" < "${1}" ; fi
 
   printf "\n"
   while [[ "${clip_timeout}" -gt 0 ]] ; do
@@ -215,7 +208,7 @@ clip () {
   printf "\r\033[K  Clearing password from %s ..." "${clip_dest}"
 
   if [[ "${clip_dest}" = "screen" ]] ; then clear
-  else printf "\n" ; printf "" | ${copy} ; fi
+  else printf "\n" ; printf "" | "${copy}" ; fi
 }
 
 new_entry () {
@@ -274,6 +267,8 @@ if [[ ! -d "${safe_dir}" ]] ; then mkdir -p "${safe_dir}" ; fi
 if [[ -n "${pepper}" && ! -f "${pepper}" ]] ; then gen_pepper ; fi
 
 chmod -R 0700 "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
+
+if [[ -f "${pepper}" ]] ; then pep="$(cat ${pepper})" ; else pep="" ; fi
 
 if [[ -z "$(command -v ${copy})" ]] ; then
   warn "Clipboard not available, passwords will print to screen/stdout!"
