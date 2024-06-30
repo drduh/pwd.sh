@@ -12,8 +12,8 @@ today="$(date +%F)"
 gpg="$(command -v gpg || command -v gpg2)"
 gpg_conf="${HOME}/.gnupg/gpg.conf"
 
-copy="${PWDSH_CLIP:=xclip}"           # clipboard, 'pbcopy' on macOS
-copy_args=${PWDSH_COPY_ARGS:=}        # args to pass to copy command
+clip="${PWDSH_CLIP:=xclip}"           # clipboard, 'pbcopy' on macOS
+clip_args="${PWDSH_CLIP_ARGS:=}"      # args to pass to clip command
 clip_dest="${PWDSH_DEST:=clipboard}"  # cb type, 'screen' for stdout
 clip_timeout="${PWDSH_TIME:=10}"      # seconds to clear cb/screen
 comment="${PWDSH_COMMENT:=}"          # *unencrypted* comment in files
@@ -32,8 +32,7 @@ cleanup () {
   # "Lock" files on trapped exits.
 
   ret=$?
-  chmod -R 0000 \
-    "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
+  chmod -R 0000 "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
   exit ${ret}
 }
 
@@ -46,11 +45,10 @@ fail () {
 
 warn () {
   # Print a warning in yellow.
-
   tput setaf 3 ; printf "\nWARNING: %s\n" "${1}" ; tput sgr0
 }
 
-gen_pepper () {
+generate_pepper () {
   # Generate pepper, avoid ambiguous characters.
 
   warn "${pepper} created"
@@ -86,10 +84,7 @@ get_pass () {
 decrypt () {
   # Decrypt with GPG.
 
-  secret="${1}"
-  if [[ -f "${pepper}" ]] ; then secret+=".$(cat ${pepper})" ; fi
-
-  printf "%s" "${secret}" | \
+  printf "%s" "${1}${pep}" | \
     ${gpg} --armor --batch --no-symkey-cache \
     --decrypt --passphrase-fd 0 "${2}" 2>/dev/null
 }
@@ -97,13 +92,10 @@ decrypt () {
 encrypt () {
   # Encrypt with GPG.
 
-  secret="${1}"
-  if [[ -f "${pepper}" ]] ; then secret+=".$(cat ${pepper})" ; fi
-
   ${gpg} --armor --batch --comment "${comment}" \
     --symmetric --yes --passphrase-fd 3 \
     --output "${2}" "${3}" 3< \
-    <(printf "%s" "${secret}") 2>/dev/null
+    <(printf "%s" "${1}${pep}") 2>/dev/null
 }
 
 read_pass () {
@@ -117,17 +109,17 @@ read_pass () {
     else username="${2}" ; fi
   done
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
+  get_pass "Password to access ${safe_ix}: " ; printf "\n"
 
   spath=$(decrypt "${password}" "${safe_ix}" | \
     grep -F "${username}" | tail -1 | cut -d ":" -f2) || \
       fail "Secret not available"
 
-  clip <(decrypt "${password}" "${spath}") || \
+  emit_pass <(decrypt "${password}" "${spath}") || \
     fail "Failed to decrypt ${spath}"
 }
 
-gen_pass () {
+generate_pass () {
   # Generate a password from urandom.
 
   if [[ -z "${3+x}" ]] ; then read -r -p "
@@ -142,13 +134,13 @@ gen_pass () {
     fold -w "${pass_len}" | head -1
 }
 
-gen_user () {
+generate_user () {
   # Generate a username.
 
   printf "%s%s\n" \
-    "$(awk 'length > 4 && length < 8 {print(tolower($0))}' \
-    /usr/share/dict/words | tr -d "'" | sort | uniq | \
-    iconv -f utf8 -t ascii//TRANSLIT | sort -R | head -1)" \
+    "$(awk 'length > 2 && length < 12 {print(tolower($0))}' \
+    /usr/share/dict/words | grep -v "'" | sort -R | head -n2 | \
+    tr "\n" "_" | iconv -f utf-8 -t ascii//TRANSLIT)" \
     "$(tr -dc "[:digit:]" < /dev/urandom | fold -w 4 | head -1)"
 }
 
@@ -159,10 +151,9 @@ write_pass () {
     fold -w10 | head -1)"
 
   if [[ -n "${pass_copy}" ]] ; then
-    clip <(printf '%s' "${userpass}")
-  fi
+    emit_pass <(printf '%s' "${userpass}") ; fi
 
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n"
+  get_pass "Password to access ${safe_ix}: " ; printf "\n"
 
   printf '%s\n' "${userpass}" | \
     encrypt "${password}" "${spath}" - || \
@@ -180,16 +171,14 @@ list_entry () {
   # Decrypt the index to list entries.
 
   if [[ ! -s "${safe_ix}" ]] ; then fail "${safe_ix} not found" ; fi
-
-  get_pass "Password to unlock ${safe_ix}: " ; printf "\n\n"
-
+  get_pass "Password to access ${safe_ix}: " ; printf "\n\n"
   decrypt "${password}" "${safe_ix}" || fail "${safe_ix} not available"
 }
 
 backup () {
   # Archive index, safe and configuration.
 
-  if [[ ! -f ${safe_backup} ]] ; then
+  if [[ ! -f "${safe_backup}" ]] ; then
     if [[ -f "${safe_ix}" && -d "${safe_dir}" ]] ; then
       cp "${gpg_conf}" "gpg.conf.${today}"
       tar cf "${safe_backup}" "${safe_dir}" "${safe_ix}" \
@@ -200,12 +189,12 @@ backup () {
   else warn "${safe_backup} exists, skipping archive" ; fi
 }
 
-clip () {
+emit_pass () {
   # Use clipboard or stdout and clear after timeout.
 
   if [[ "${clip_dest}" = "screen" ]] ; then
     printf '\n%s\n' "$(cat ${1})"
-  else ${copy} < "${1}" ; fi
+  else ${clip} < "${1}" ; fi
 
   printf "\n"
   while [[ "${clip_timeout}" -gt 0 ]] ; do
@@ -215,7 +204,7 @@ clip () {
   printf "\r\033[K  Clearing password from %s ..." "${clip_dest}"
 
   if [[ "${clip_dest}" = "screen" ]] ; then clear
-  else printf "\n" ; printf "" | ${copy} ; fi
+  else printf "\n" ; printf "" | ${clip} ; fi
 }
 
 new_entry () {
@@ -224,9 +213,9 @@ new_entry () {
   if [[ -z "${2+x}" ]] ; then read -r -p "
   Username (Enter to generate): " username
   else username="${2}" ; fi
+
   if [[ -z "${username}" ]] ; then
-    username=$(gen_user "$@")
-  fi
+    username=$(generate_user "$@") ; fi
 
   if [[ -z "${3+x}" ]] ; then
     get_pass "Password for \"${username}\" (Enter to generate): "
@@ -235,8 +224,7 @@ new_entry () {
 
   printf "\n"
   if [[ -z "${password}" ]] ; then
-    userpass=$(gen_pass "$@")
-  fi
+    userpass=$(generate_pass "$@") ; fi
 }
 
 print_help () {
@@ -271,15 +259,17 @@ if [[ ! -f "${gpg_conf}" ]] ; then fail "GnuPG config is not available" ; fi
 
 if [[ ! -d "${safe_dir}" ]] ; then mkdir -p "${safe_dir}" ; fi
 
-if [[ -n "${pepper}" && ! -f "${pepper}" ]] ; then gen_pepper ; fi
+if [[ -n "${pepper}" && ! -f "${pepper}" ]] ; then generate_pepper ; fi
 
 chmod -R 0700 "${pepper}" "${safe_dir}" "${safe_ix}" 2>/dev/null
 
-if [[ -z "$(command -v ${copy})" ]] ; then
+if [[ -f "${pepper}" ]] ; then pep="$(cat ${pepper})" ; else pep="" ; fi
+
+if [[ -z "$(command -v ${clip})" ]] ; then
   warn "Clipboard not available, passwords will print to screen/stdout!"
   clip_dest="screen"
-elif [[ -n "${copy_args}" ]] ; then
-  copy+=" ${copy_args}"
+elif [[ -n "${clip_args}" ]] ; then
+  clip+=" ${clip_args}"
 fi
 
 username=""
