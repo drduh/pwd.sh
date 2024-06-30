@@ -66,8 +66,8 @@ Several customizable options and features are also available, and can be configu
 
 Variable | Description | Default | Available options
 -|-|-|-
-`PWDSH_COPY` | clipboard to use | `xclip` | `pbcopy` on macOS
-`PWDSH_COPY_ARGS` | arguments to pass to clipboard command | unset (disabled) | `-i -selection clipboard` to use primary (control-v) clipboard with xclip
+`PWDSH_CLIP` | clipboard to use | `xclip` | `pbcopy` on macOS
+`PWDSH_CLIP_ARGS` | arguments to pass to clipboard command | unset (disabled) | `-i -selection clipboard` to use primary (control-v) clipboard with xclip
 `PWDSH_TIME` | seconds to clear password from clipboard/screen | `10` | any valid integer
 `PWDSH_LEN` | default password length | `14` | any valid integer
 `PWDSH_COPY` | copy password to clipboard before write | unset (disabled) | `1` or `true` to enable
