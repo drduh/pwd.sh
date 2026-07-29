@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # https://github.com/drduh/pwd.sh/blob/master/pwd.sh
+
 #set -x  # uncomment to debug
 set -o errtrace
 set -o nounset
@@ -37,7 +38,7 @@ optPublicComment="${PWDSH_COMMENT:=}" # public/plaintext file comment
 optSecretEchoChars="${PWDSH_ECHO:=*}" # echo "*" when typing passwords
 optSecretLength="${PWDSH_LEN:=20}"    # default secret length
 optSecretChars="${PWDSH_CHAR:='A-Za-z0-9!@#$%^&*()_+'}"
-optRandomSrc="${PWDSH_RANDSRC:=/dev/urandom}"
+optRandSrc="${PWDSH_RANDSRC:=/dev/urandom}"
 
 cleanup() { # "Lock" files on trapped exits.
   local ret=$?
@@ -67,8 +68,8 @@ warn()  { log 3 "$@"; }
 generatePepper() { # Generate, display and save "pepper" value.
   warn "Created '${secretPepper}' - copy to secure storage:"
   printf '%s\n' \
-    "$(tr -dc 'A-Y2-9' < "${optRandomSrc}" | tr -d "IOS5UB" |
-    fold -w 6 | paste -sd - - | head -c 27)" | \
+    "$(tr -dc 'A-Y2-9' < "${optRandSrc}" | tr -d "IOS5UB" |
+    fold -w 6 | paste -sd - - | head -c 27)" |
     tee "${secretPepper}" || fail "Failed saving ${secretPepper}"
 }
 
@@ -92,7 +93,7 @@ promptPassword() { # Prompt for a password.
 }
 
 decrypt() { # Decrypt with GPG.
-  printf '%s' "${1}${pepperSecret}" | \
+  printf '%s' "${1}${pepperSecret}" |
     ${gpgExec} ${gpgArgs} \
     --decrypt --no-symkey-cache \
     --passphrase-fd 0 "${2}" 2>/dev/null
@@ -126,7 +127,7 @@ readSecret() { # Decrypt to read a secret.
 
   spath="${secretStore}/${sline#*"${secretStore}"}"
 
-  revealPass <(decrypt "${password}" "${spath}") ||
+  revealSecret <(decrypt "${password}" "${spath}") ||
     fail "Failed to decrypt ${spath}"
 }
 
@@ -138,7 +139,7 @@ generateSecret() { # Generate a random string.
   if [[ "${length}" =~ ^[0-9]+$ ]] ; then
     optSecretLength="${length}" ; fi
 
-  tr -dc "${optSecretChars}" < "${optRandomSrc}" |
+  tr -dc "${optSecretChars}" < "${optRandSrc}" |
     head -c "${optSecretLength}"
 }
 
@@ -146,7 +147,7 @@ generateUsername() { # Generate a random username.
   countDigits=3
   countWords=2
 
-  digits="$(tr -dc '0-9' < "${optRandomSrc}" | head -c ${countDigits})"
+  digits="$(tr -dc '0-9' < "${optRandSrc}" | head -c ${countDigits})"
   words="$(awk 'length > 2 && length < 12 &&
     index($0, "'"'"'") == 0 { print tolower($0) }' \
     "${optDictionaryWords}" | sort -R |
@@ -156,11 +157,11 @@ generateUsername() { # Generate a random username.
 }
 
 saveSecret() { # Write encrypted secret and update index.
-  sname="$(tr -dc 'a-z' < ${optRandomSrc} | head -c 10)"
+  sname="$(tr -dc 'a-z' < ${optRandSrc} | head -c 10)"
   spath="${secretStore%/}/${sname}"
 
   if [[ -n "${optCopyBeforeWrite}" ]] ; then
-    revealPass <(printf '%s' "${userpass}") ; fi
+    revealSecret <(printf '%s' "${userpass}") ; fi
 
   promptPassword "Password to access ${secretIndex}: "
 
@@ -201,10 +202,10 @@ backup() { # Archive index, secret store and GPG configuration.
   tar cvf "${backupStore}" \
     "${secretStore}" "${secretIndex}" \
     "${BASH_SOURCE[0]}" "${gpgConfCopy}" ||
-    fail "Failed archiving to ${backupStore}"
+      fail "Failed archiving to ${backupStore}"
 }
 
-revealPass() { # Reveal secret and clear after timeout.
+revealSecret() { # Reveal secret and clear after timeout.
   if [[ "${clipOut}" = "screen" ]] ; then
     printf '\n%s\n' "$(cat "${1}")"
   else ${clipCmd} < "${1}" ; fi
@@ -318,19 +319,16 @@ while [[ -z "${activity}" ]] ; do
   printf '\n'
 done
 
-activity="$(printf '%s' "${activity}" |
-  tr '[:upper:]' '[:lower:]')"
-
 case "${activity}" in
-  h|u|s|v|r|l|w|b) : ;;
+  [Hh]|[Uu]|[Ss]|[Vv]|[Rr]|[Ll]|[Ww]|[Bb]) : ;;
   *) fail "Invalid option selected" ;;
 esac
 
 case "${activity}" in
-  h) final "$(printHelp)" ;;
-  u) final "Username: $(generateUsername)" ;;
-  s) final "Secret: $(generateSecret "$@")" ;;
-  v) final "${app} - bash ${BASH_VERSION}" ;;
+  [Hh]) final "$(printHelp)" ;;
+  [Uu]) final "Username: $(generateUsername)" ;;
+  [Ss]) final "Secret: $(generateSecret "$@")" ;;
+  [Vv]) final "${app} - bash ${BASH_VERSION}" ;;
 esac
 
 initOps
@@ -339,13 +337,13 @@ username=""
 password=""
 
 case "${activity}" in
-  r) readSecret "$@"
-     final "Read secret" ;;
-  l) listSecrets "${secretIndex}"
-     final "Listed secrets" ;;
-  w) makeSecret "$@"
-     saveSecret
-     final "Saved secret" ;;
-  b) backup
-     final "Archived ${backupStore}" ;;
+  [Rr]) readSecret "$@"
+        final "Read secret" ;;
+  [Ll]) listSecrets "${secretIndex}"
+        final "Listed secrets" ;;
+  [Ww]) makeSecret "$@"
+        saveSecret
+        final "Saved secret" ;;
+  [Bb]) backup
+        final "Archived ${backupStore}" ;;
 esac
