@@ -95,8 +95,8 @@ encrypt() { # Encrypt with GPG.
     --yes --symmetric \
     --comment "${optPublicComment}" \
     --passphrase-fd 3 \
-    --output "${2}" "${3}" 3< \
-    <(printf '%s' "${1}${pepperSecret}") 2>/dev/null
+    --output "${2}" "${3}" \
+    3< <(printf '%s' "${1}${pepperSecret}") 2>/dev/null
 }
 
 readSecret() { # Decrypt to read a secret.
@@ -110,14 +110,13 @@ readSecret() { # Decrypt to read a secret.
 
   promptPassword "Password to access ${secretIndex}: "
 
-  sline=$(decrypt "${password}" "${secretIndex}" |
+  local sline=$(decrypt "${password}" "${secretIndex}" |
     grep -F "${username}" | tail -1)
   if [[ -z "${sline}" ]] ; then
     fail "Secret not available"
   fi
 
-  spath="${secretStore}/${sline#*"${secretStore}"}"
-
+  local spath="${secretStore}/${sline#*"${secretStore}"}"
   revealSecret <(decrypt "${password}" "${spath}") ||
     fail "Failed to decrypt ${spath}"
 }
@@ -135,21 +134,19 @@ generateSecret() { # Generate a random string.
 }
 
 generateUsername() { # Generate a random username.
-  countDigits=3
-  countWords=2
-
-  digits="$(tr -dc '0-9' < "${optRandSrc}" | head -c ${countDigits})"
-  words="$(awk 'length > 2 && length < 12 &&
+  local countDigits=3
+  local countWords=2
+  local digits="$(tr -dc '0-9' < "${optRandSrc}" | head -c ${countDigits})"
+  local words="$(awk 'length > 2 && length < 12 &&
     index($0, "'"'"'") == 0 { print tolower($0) }' \
     "${optDictionaryWords}" | sort -R |
     head -n ${countWords} | tr '\n' '-' | tr -cd 'a-z0-9-\n')"
-
   printf '%s%s' "${words}" "${digits}"
 }
 
 saveSecret() { # Write encrypted secret and update index.
-  sname="$(tr -dc 'a-z' < ${optRandSrc} | head -c 10)"
-  spath="${secretStore%/}/${sname}"
+  local sname="$(tr -dc 'a-z' < ${optRandSrc} | head -c 10)"
+  local spath="${secretStore%/}/${sname}"
 
   if [[ -n "${optCopyBeforeWrite}" ]] ; then
     revealSecret <(printf '%s' "${userpass}") ; fi
@@ -187,13 +184,14 @@ backup() { # Archive index, secret store and GPG configuration.
     grep -q "." ; then
     fail "Backup failed: no secrets in '${secretStore}'" ; fi
 
-  gpgConfCopy="${app}.gpg.conf"
+  local gpgConfCopy="${app}.gpg.conf"
   cp "${gpgConf}" "${gpgConfCopy}"
 
-  tar cvf "${backupStore}" \
-    "${secretStore}" "${secretIndex}" \
-    "${BASH_SOURCE[0]}" "${gpgConfCopy}" ||
-      fail "Failed archiving to ${backupStore}"
+  local -a backupContent=(
+    "${secretStore}" "${secretIndex}"
+    "${gpgConfCopy}" "${BASH_SOURCE[0]}")
+  tar cvf "${backupStore}" -- "${backupContent[@]}" ||
+    fail "Failed archiving to ${backupStore}"
 }
 
 revealSecret() { # Reveal secret and clear after timeout.
