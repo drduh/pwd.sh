@@ -40,15 +40,6 @@ optSecretLength="${PWDSH_LEN:=20}"    # default secret length
 optSecretChars="${PWDSH_CHAR:='A-Za-z0-9!@#$%^&*()_+'}"
 optRandSrc="${PWDSH_RANDSRC:=/dev/urandom}"
 
-cleanup() { # "Lock" files on trapped exits.
-  local ret=$?
-  chmod -R 0000 "${secretPepper}" \
-                "${secretStore}" \
-                "${secretIndex}" 2>/dev/null
-  exit "${ret}"
-}
-trap cleanup EXIT
-
 timestamp() { # Format current date and time.
   date +"%A %b %d %H:%M:%S"
 }
@@ -281,9 +272,6 @@ initGnuPG() { # Fail if GnuPG materials are not available.
 initStorage() { # Create secret store and set permissions.
   if [[ ! -d "${secretStore}" ]] ; then
     mkdir -p "${secretStore}" ; fi
-  chmod -R 0700 "${secretPepper}" \
-                "${secretIndex}" \
-                "${secretStore}" 2>/dev/null
 }
 
 initPepper() { # Generate or load "pepper", if configured.
