@@ -21,24 +21,21 @@ name="${0##*/}"
 app="${vers}-${name}"
 
 backupFname="${app}.$(hostname).${today}.tar"
-backupStore="${PWDSH_BACKUP_NAME:=${backupFname}}"
-
-secretStore="${PWDSH_STORE:=${app}.secret}" # secrets storage directory
-secretIndex="${PWDSH_INDEX:=${app}.index}"  # secrets index file
-secretPepper="${PWDSH_PEPPER:=}"            # optional pepper file
-
-clipCmd="${PWDSH_CLIP_CMD:=xclip}"     # clipboard, 'pbcopy' on macOS
-clipArg="${PWDSH_CLIP_ARG:=}"          # args to pass to clip command
-clipOut="${PWDSH_CLIP_OUT:=clipboard}" # cb type, 'screen' for stdout
-clipSec="${PWDSH_CLIP_SEC:=10}"        # seconds until clipboard clear
-
-optCopyBeforeWrite="${PWDSH_COPY:=}"  # copy secret before write
-optDictionaryWords="${PWDSH_DICT:=/usr/share/dict/words}"
-optPublicComment="${PWDSH_COMMENT:=}" # public/plaintext file comment
-optSecretEchoChars="${PWDSH_ECHO:=*}" # echo "*" when typing passwords
-optSecretLength="${PWDSH_LEN:=20}"    # default secret length
-optSecretChars="${PWDSH_CHAR:='A-Za-z0-9!@#$%^&*()_+'}"
-optRandSrc="${PWDSH_RANDSRC:=/dev/urandom}"
+backupStore="${PWDSH_BACKUP_NAME:-${backupFname}}"
+secretStore="${PWDSH_STORE:-${app}.secret}" # secrets storage directory
+secretIndex="${PWDSH_INDEX:-${app}.index}"  # secrets index file
+secretPepper="${PWDSH_PEPPER-}"             # optional pepper file
+clipCmd="${PWDSH_CLIP_CMD:-xclip}"          # clipboard, 'pbcopy' on macOS
+clipArg="${PWDSH_CLIP_ARG-}"                # args to pass to clip command
+clipOut="${PWDSH_CLIP_OUT:-clipboard}"      # cb type, 'screen' for stdout
+clipSec="${PWDSH_CLIP_SEC:-10}"             # seconds until clipboard clear
+optCopyBeforeWrite="${PWDSH_COPY-}"         # copy secret before write
+optDictionaryWords="${PWDSH_DICT:-/usr/share/dict/words}"
+optPublicComment="${PWDSH_COMMENT-}"        # public/plaintext file comment
+optSecretEchoChars="${PWDSH_ECHO-*}"        # echo "*" when typing passwords
+optSecretLength="${PWDSH_LEN:-20}"          # default secret length
+optSecretChars="${PWDSH_CHAR:-'A-Za-z0-9!@#$%^&*()_+'}"
+optRandSrc="${PWDSH_RANDSRC:-/dev/urandom}"
 
 timestamp() { # Format current date and time.
   date +"%A %b %d %H:%M:%S"
@@ -67,7 +64,6 @@ generatePepper() { # Generate, display and save "pepper" value.
 promptPassword() { # Prompt for a password.
   password=""
   prompt="${1}"
-
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then break
     elif [[ ${char} == $'\177' ]] ; then
@@ -79,7 +75,6 @@ promptPassword() { # Prompt for a password.
       prompt="${optSecretEchoChars}"
       password+="${char}" ; fi
   done
-
   printf '\n'
 }
 
@@ -199,7 +194,6 @@ revealSecret() { # Reveal secret and clear after timeout.
     printf '\n%s\n' "$(cat "${1}")"
   else ${clipCmd} < "${1}" ; fi
 
-  printf '\n'
   while [[ "${clipSec}" -gt 0 ]] ; do
     printf '\r\033[KSecret on %s - clearing in %.d' \
       "${clipOut}" "$((clipSec--))"
