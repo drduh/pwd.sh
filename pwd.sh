@@ -12,7 +12,7 @@ export LC_ALL="C"
 read -r now today <<< "$(date +'%s %F')"
 
 gpgExec="$(command -v gpg || command -v gpg2)"
-gpgArgs="--armor --batch"
+gpgArgs=("--armor" "--batch")
 gpgPath="${HOME}/.gnupg"
 gpgConf="${gpgPath}/gpg.conf"
 
@@ -85,13 +85,13 @@ promptPassword() { # Prompt for a password.
 
 decrypt() { # Decrypt with GPG.
   printf '%s' "${1}${pepperSecret}" |
-    ${gpgExec} ${gpgArgs} \
+    ${gpgExec} "${gpgArgs[@]}" \
     --decrypt --no-symkey-cache \
     --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
 encrypt() { # Encrypt with GPG.
-  ${gpgExec} ${gpgArgs} \
+  ${gpgExec} "${gpgArgs[@]}" \
     --yes --symmetric \
     --comment "${optPublicComment}" \
     --passphrase-fd 3 \
