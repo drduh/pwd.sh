@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # https://github.com/drduh/pwd.sh/blob/master/pwd.sh
+
 #set -x  # uncomment to debug
 set -o errtrace
 set -o nounset
@@ -11,7 +12,7 @@ export LC_ALL="C"
 read -r now today <<< "$(date +'%s %F')"
 
 gpgExec="$(command -v gpg || command -v gpg2)"
-gpgArgs="--armor --batch"
+gpgArgs=("--armor" "--batch")
 gpgPath="${HOME}/.gnupg"
 gpgConf="${gpgPath}/gpg.conf"
 
@@ -20,33 +21,21 @@ name="${0##*/}"
 app="${vers}-${name}"
 
 backupFname="${app}.$(hostname).${today}.tar"
-backupStore="${PWDSH_BACKUP_NAME:=${backupFname}}"
-
-secretStore="${PWDSH_STORE:=${app}.secret}" # secrets storage directory
-secretIndex="${PWDSH_INDEX:=${app}.index}"  # secrets index file
-secretPepper="${PWDSH_PEPPER:=}"            # optional pepper file
-
-clipCmd="${PWDSH_CLIP_CMD:=xclip}"     # clipboard, 'pbcopy' on macOS
-clipArg="${PWDSH_CLIP_ARG:=}"          # args to pass to clip command
-clipOut="${PWDSH_CLIP_OUT:=clipboard}" # cb type, 'screen' for stdout
-clipSec="${PWDSH_CLIP_SEC:=10}"        # seconds until clipboard clear
-
-optCopyBeforeWrite="${PWDSH_COPY:=}"  # copy secret before write
-optDictionaryWords="${PWDSH_DICT:=/usr/share/dict/words}"
-optPublicComment="${PWDSH_COMMENT:=}" # public/plaintext file comment
-optSecretEchoChars="${PWDSH_ECHO:=*}" # echo "*" when typing passwords
-optSecretLength="${PWDSH_LEN:=20}"    # default secret length
-optSecretChars="${PWDSH_CHAR:='A-Za-z0-9!@#$%^&*()_+'}"
-optRandomSrc="${PWDSH_RANDSRC:=/dev/urandom}"
-
-cleanup() { # "Lock" files on trapped exits.
-  local ret=$?
-  chmod -R 0000 "${secretPepper}" \
-                "${secretStore}" \
-                "${secretIndex}" 2>/dev/null
-  exit "${ret}"
-}
-trap cleanup EXIT
+backupStore="${PWDSH_BACKUP_NAME:-${backupFname}}"
+secretStore="${PWDSH_STORE:-${app}.secret}" # secrets storage directory
+secretIndex="${PWDSH_INDEX:-${app}.index}"  # secrets index file
+secretPepper="${PWDSH_PEPPER-}"             # optional pepper file
+clipCmd="${PWDSH_CLIP_CMD:-xclip}"          # clipboard, 'pbcopy' on macOS
+clipArg="${PWDSH_CLIP_ARG-}"                # args to pass to clip command
+clipOut="${PWDSH_CLIP_OUT:-clipboard}"      # cb type, 'screen' for stdout
+clipSec="${PWDSH_CLIP_SEC:-10}"             # seconds until clipboard clear
+optCopyBeforeWrite="${PWDSH_COPY-}"         # copy secret before write
+optDictionaryWords="${PWDSH_DICT:-/usr/share/dict/words}"
+optPublicComment="${PWDSH_COMMENT-}"        # public/plaintext file comment
+optSecretEchoChars="${PWDSH_ECHO-*}"        # echo "*" when typing passwords
+optSecretLength="${PWDSH_LEN:-20}"          # default secret length
+optSecretChars="${PWDSH_CHAR:-'A-Za-z0-9!@#$%^&*()_+'}"
+optRandSrc="${PWDSH_RANDSRC:-/dev/urandom}"
 
 timestamp() { # Format current date and time.
   date +"%A %b %d %H:%M:%S"
@@ -67,15 +56,14 @@ warn()  { log 3 "$@"; }
 generatePepper() { # Generate, display and save "pepper" value.
   warn "Created '${secretPepper}' - copy to secure storage:"
   printf '%s\n' \
-    "$(tr -dc 'A-Y2-9' < "${optRandomSrc}" | tr -d "IOS5UB" |
-    fold -w 6 | paste -sd - - | head -c 27)" | \
+    "$(tr -dc 'A-Y2-9' < "${optRandSrc}" | tr -d "IOS5UB" |
+    fold -w 6 | paste -sd - - | head -c 27)" |
     tee "${secretPepper}" || fail "Failed saving ${secretPepper}"
 }
 
 promptPassword() { # Prompt for a password.
   password=""
   prompt="${1}"
-
   while IFS= read -p "${prompt}" -r -s -n 1 char ; do
     if [[ ${char} == $'\0' ]] ; then break
     elif [[ ${char} == $'\177' ]] ; then
@@ -87,24 +75,23 @@ promptPassword() { # Prompt for a password.
       prompt="${optSecretEchoChars}"
       password+="${char}" ; fi
   done
-
   printf '\n'
 }
 
 decrypt() { # Decrypt with GPG.
-  printf '%s' "${1}${pepperSecret}" | \
-    ${gpgExec} ${gpgArgs} \
+  printf '%s' "${1}${pepperSecret}" |
+    ${gpgExec} "${gpgArgs[@]}" \
     --decrypt --no-symkey-cache \
     --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
 encrypt() { # Encrypt with GPG.
-  ${gpgExec} ${gpgArgs} \
+  ${gpgExec} "${gpgArgs[@]}" \
     --yes --symmetric \
     --comment "${optPublicComment}" \
     --passphrase-fd 3 \
-    --output "${2}" "${3}" 3< \
-    <(printf '%s' "${1}${pepperSecret}") 2>/dev/null
+    --output "${2}" "${3}" \
+    3< <(printf '%s' "${1}${pepperSecret}") 2>/dev/null
 }
 
 readSecret() { # Decrypt to read a secret.
@@ -118,15 +105,14 @@ readSecret() { # Decrypt to read a secret.
 
   promptPassword "Password to access ${secretIndex}: "
 
-  sline=$(decrypt "${password}" "${secretIndex}" |
+  local sline=$(decrypt "${password}" "${secretIndex}" |
     grep -F "${username}" | tail -1)
   if [[ -z "${sline}" ]] ; then
     fail "Secret not available"
   fi
 
-  spath="${secretStore}/${sline#*"${secretStore}"}"
-
-  revealPass <(decrypt "${password}" "${spath}") ||
+  local spath="${secretStore}/${sline#*"${secretStore}"}"
+  revealSecret <(decrypt "${password}" "${spath}") ||
     fail "Failed to decrypt ${spath}"
 }
 
@@ -138,29 +124,27 @@ generateSecret() { # Generate a random string.
   if [[ "${length}" =~ ^[0-9]+$ ]] ; then
     optSecretLength="${length}" ; fi
 
-  tr -dc "${optSecretChars}" < "${optRandomSrc}" |
+  tr -dc "${optSecretChars}" < "${optRandSrc}" |
     head -c "${optSecretLength}"
 }
 
 generateUsername() { # Generate a random username.
-  countDigits=3
-  countWords=2
-
-  digits="$(tr -dc '0-9' < "${optRandomSrc}" | head -c ${countDigits})"
-  words="$(awk 'length > 2 && length < 12 &&
+  local countDigits=3
+  local countWords=2
+  local digits="$(tr -dc '0-9' < "${optRandSrc}" | head -c ${countDigits})"
+  local words="$(awk 'length > 2 && length < 12 &&
     index($0, "'"'"'") == 0 { print tolower($0) }' \
     "${optDictionaryWords}" | sort -R |
     head -n ${countWords} | tr '\n' '-' | tr -cd 'a-z0-9-\n')"
-
   printf '%s%s' "${words}" "${digits}"
 }
 
 saveSecret() { # Write encrypted secret and update index.
-  sname="$(tr -dc 'a-z' < ${optRandomSrc} | head -c 10)"
-  spath="${secretStore%/}/${sname}"
+  local sname="$(tr -dc 'a-z' < ${optRandSrc} | head -c 10)"
+  local spath="${secretStore%/}/${sname}"
 
   if [[ -n "${optCopyBeforeWrite}" ]] ; then
-    revealPass <(printf '%s' "${userpass}") ; fi
+    revealSecret <(printf '%s' "${userpass}") ; fi
 
   promptPassword "Password to access ${secretIndex}: "
 
@@ -195,21 +179,21 @@ backup() { # Archive index, secret store and GPG configuration.
     grep -q "." ; then
     fail "Backup failed: no secrets in '${secretStore}'" ; fi
 
-  gpgConfCopy="${app}.gpg.conf"
+  local gpgConfCopy="${app}.gpg.conf"
   cp "${gpgConf}" "${gpgConfCopy}"
 
-  tar cvf "${backupStore}" \
-    "${secretStore}" "${secretIndex}" \
-    "${BASH_SOURCE[0]}" "${gpgConfCopy}" ||
+  local -a backupContent=(
+    "${secretStore}" "${secretIndex}"
+    "${gpgConfCopy}" "${BASH_SOURCE[0]}")
+  tar cvf "${backupStore}" -- "${backupContent[@]}" ||
     fail "Failed archiving to ${backupStore}"
 }
 
-revealPass() { # Reveal secret and clear after timeout.
+revealSecret() { # Reveal secret and clear after timeout.
   if [[ "${clipOut}" = "screen" ]] ; then
     printf '\n%s\n' "$(cat "${1}")"
   else ${clipCmd} < "${1}" ; fi
 
-  printf '\n'
   while [[ "${clipSec}" -gt 0 ]] ; do
     printf '\r\033[KSecret on %s - clearing in %.d' \
       "${clipOut}" "$((clipSec--))"
@@ -280,9 +264,6 @@ initGnuPG() { # Fail if GnuPG materials are not available.
 initStorage() { # Create secret store and set permissions.
   if [[ ! -d "${secretStore}" ]] ; then
     mkdir -p "${secretStore}" ; fi
-  chmod -R 0700 "${secretPepper}" \
-                "${secretIndex}" \
-                "${secretStore}" 2>/dev/null
 }
 
 initPepper() { # Generate or load "pepper", if configured.
@@ -318,19 +299,16 @@ while [[ -z "${activity}" ]] ; do
   printf '\n'
 done
 
-activity="$(printf '%s' "${activity}" |
-  tr '[:upper:]' '[:lower:]')"
-
 case "${activity}" in
-  h|u|s|v|r|l|w|b) : ;;
+  [Hh]|[Uu]|[Ss]|[Vv]|[Rr]|[Ll]|[Ww]|[Bb]) : ;;
   *) fail "Invalid option selected" ;;
 esac
 
 case "${activity}" in
-  h) final "$(printHelp)" ;;
-  u) final "Username: $(generateUsername)" ;;
-  s) final "Secret: $(generateSecret "$@")" ;;
-  v) final "${app} - bash ${BASH_VERSION}" ;;
+  [Hh]) final "$(printHelp)" ;;
+  [Uu]) final "Username: $(generateUsername)" ;;
+  [Ss]) final "Secret: $(generateSecret "$@")" ;;
+  [Vv]) final "${app} - bash ${BASH_VERSION}" ;;
 esac
 
 initOps
@@ -339,13 +317,13 @@ username=""
 password=""
 
 case "${activity}" in
-  r) readSecret "$@"
-     final "Read secret" ;;
-  l) listSecrets "${secretIndex}"
-     final "Listed secrets" ;;
-  w) makeSecret "$@"
-     saveSecret
-     final "Saved secret" ;;
-  b) backup
-     final "Archived ${backupStore}" ;;
+  [Rr]) readSecret "$@"
+        final "Read secret" ;;
+  [Ll]) listSecrets "${secretIndex}"
+        final "Listed secrets" ;;
+  [Ww]) makeSecret "$@"
+        saveSecret
+        final "Saved secret" ;;
+  [Bb]) backup
+        final "Archived ${backupStore}" ;;
 esac
