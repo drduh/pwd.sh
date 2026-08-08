@@ -30,10 +30,10 @@ clipArg="${PWDSH_CLIP_ARG-}"                # args to pass to clip command
 clipOut="${PWDSH_CLIP_OUT:-clipboard}"      # cb type, 'screen' for stdout
 clipSec="${PWDSH_CLIP_SEC:-10}"             # seconds until clipboard clear
 optCopyBeforeWrite="${PWDSH_COPY-}"         # copy secret before write
-optDictionaryWords="${PWDSH_DICT:-/usr/share/dict/words}"
 optPublicComment="${PWDSH_COMMENT-}"        # public/plaintext file comment
 optSecretEchoChars="${PWDSH_ECHO-*}"        # echo "*" when typing passwords
 optSecretLength="${PWDSH_LEN:-20}"          # default secret length
+optDictionaryWords="${PWDSH_DICT:-/usr/share/dict/words}"
 optSecretChars="${PWDSH_CHAR:-'A-Za-z0-9!@#$%^&*()_+'}"
 optRandSrc="${PWDSH_RANDSRC:-/dev/urandom}"
 
@@ -57,8 +57,8 @@ generatePepper() { # Generate, display and save "pepper" value.
   warn "Created '${secretPepper}' - copy to secure storage:"
   printf '%s\n' \
     "$(tr -dc 'A-Y2-9' < "${optRandSrc}" | tr -d "IOS5UB" |
-    fold -w 6 | paste -sd - - | head -c 27)" |
-    tee "${secretPepper}" || fail "Failed saving ${secretPepper}"
+      fold -w 6 | paste -sd - - | head -c 27)" |
+      tee "${secretPepper}" || fail "Failed saving ${secretPepper}"
 }
 
 promptPassword() { # Prompt for a password.
@@ -81,8 +81,8 @@ promptPassword() { # Prompt for a password.
 decrypt() { # Decrypt with GPG.
   printf '%s' "${1}${pepperSecret}" |
     ${gpgExec} "${gpgArgs[@]}" \
-    --decrypt --no-symkey-cache \
-    --passphrase-fd 0 "${2}" 2>/dev/null
+      --decrypt --no-symkey-cache \
+      --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
 encrypt() { # Encrypt with GPG.

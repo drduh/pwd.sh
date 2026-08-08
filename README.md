@@ -1,4 +1,4 @@
-pwd.sh is a Bash script to manage text secrets, such as passwords, using [GnuPG](https://gnupg.org/).
+pwd.sh is a [Bash](https://www.gnu.org/software/bash/) script to manage text secrets, such as passwords, using [GnuPG](https://gnupg.org/).
 
 Each secret is saved to a randomly-named file in a directory. An encrypted index maps usernames to secrets contained in files. Both the index and files can be decrypted directly with GnuPG - without pwd.sh.
 
@@ -62,14 +62,14 @@ Restore from backup:
 tar xvf pwd*tar
 ```
 
-# Configure
+# Configuration
 
-pwd.sh can be configured with environment variables, for example using the [shell startup file](https://github.com/drduh/config/blob/main/zshrc):
+pwd.sh can be configured with [environment variables](https://github.com/drduh/config/blob/main/zshrc) as follows:
 
 Variable | Description | Default | Available options
 :-: | :-: | :-: | :-:
-`PWDSH_STORE` | secret storage directory | `app.store` | any valid string
-`PWDSH_INDEX` | index file name | `pwd.index` | any valid string
+`PWDSH_STORE` | secret storage directory | `v4-pwd.sh.secret` | any valid string
+`PWDSH_INDEX` | index file name | `v4-pwd.sh.index` | any valid string
 `PWDSH_CLIP_CMD` | clipboard to use | `xclip` | `pbcopy` on macOS
 `PWDSH_CLIP_ARG` | arguments to pass to clipboard command | unset (disabled) | `-i -selection clipboard` to use primary (control-v) clipboard with xclip
 `PWDSH_CLIP_OUT` | secret output destination, will set to `screen` without clipboard | `clipboard` | `clipboard` or `screen`
@@ -77,14 +77,14 @@ Variable | Description | Default | Available options
 `PWDSH_COPY` | copy secret to clipboard before write | unset (disabled) | `1` or `true` to enable
 `PWDSH_COMMENT` | **unencrypted** comment to include in index and secret files | unset | any valid string
 `PWDSH_ECHO` | character used to echo password input | `*` | any valid character
-`PWDSH_LEN` | default secret length | `14` | any valid integer
-`PWDSH_CHARS` | character set for secret | `[:alnum:]!?@#$%^&*();:+=` | any valid characters
-`PWDSH_BACKUP_NAME` | backup archive file name | `pwd.$hostname.$today.tar` | any valid string
+`PWDSH_LEN` | default secret length | `20` | any valid integer
+`PWDSH_CHAR` | character set for secret | `A-Za-z0-9!@#$%^&*()_+` | any valid characters
+`PWDSH_BACKUP_NAME` | backup archive file name | `v4-pwd.sh.hostname.2026-12-31.tar` | any valid string
 `PWDSH_PEPPER` | file containing [Pepper](#Pepper) | unset (disabled) | any valid file path
 
-See [config/gpg.conf](https://github.com/drduh/config/blob/main/gpg.conf) for additional GnuPG options.
+See [config/gpg.conf](https://github.com/drduh/config/blob/main/gpg.conf) for recommended GnuPG options.
 
-Also see [drduh/Purse](https://github.com/drduh/Purse) - a fork which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a passphrase.
+Also see [drduh/Purse](https://github.com/drduh/Purse) which integrates with [YubiKey](https://github.com/drduh/YubiKey-Guide) instead of using a passphrase to access secrets.
 
 # Pepper
 
@@ -96,5 +96,5 @@ This feature may enable use of a more memorable - and possibly weaker passphrase
 
 The Pepper feature is opt-in and has no effect unless explicitly enabled.
 
-> [!WARNING]
+> [!IMPORTANT]
 > The Pepper is **not** included in backup archives! Without the Pepper, secret storage will **not** be accessible with the passphrase alone!
